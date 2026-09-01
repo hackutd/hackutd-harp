@@ -25,7 +25,6 @@ import {
   updateMyApplication,
   uploadResumeToSignedURL as uploadToSignedURL,
 } from "../api";
-import { AgreementsStep } from "../steps/AgreementsStep";
 import { ReviewStep } from "../steps/ReviewStep";
 import { SchemaStepRenderer } from "../steps/SchemaStepRenderer";
 import { SponsorInfoStep } from "../steps/SponsorInfoStep";
@@ -386,7 +385,7 @@ export function ApplicationWizard({ userEmail }: ApplicationWizardProps) {
       if (application?.id) {
         localStorage.removeItem(stepStorageKey(application.id));
       }
-      navigate("/app/status", {
+      navigate("/app", {
         state: { justSubmitted: submitRes.data.id },
       });
     } else {
@@ -542,7 +541,7 @@ export function ApplicationWizard({ userEmail }: ApplicationWizardProps) {
         </p>
         <button
           type="button"
-          onClick={() => navigate("/app/status")}
+          onClick={() => navigate("/app")}
           className="text-sm font-light text-black underline underline-offset-2"
         >
           View status
@@ -584,16 +583,6 @@ export function ApplicationWizard({ userEmail }: ApplicationWizardProps) {
           isDeletingResume={isDeletingResume}
           onResumeSelected={uploadResume}
           onDeleteResume={removeResume}
-        />
-      );
-    }
-
-    // Agreements section gets a dedicated accordion-based layout
-    if (section === "agreements") {
-      return (
-        <AgreementsStep
-          sectionLabel={sectionLabels[section] ?? section}
-          fields={fields}
         />
       );
     }
