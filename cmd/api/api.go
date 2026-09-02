@@ -104,6 +104,7 @@ const swaggerTagsSorter = `(a, b) => {
 		"admin/faq",
 		"superadmin/applications",
 		"superadmin/emails",
+		"superadmin/hacker-links",
 		"superadmin/settings",
 		"superadmin/users"
 	];
@@ -193,6 +194,7 @@ func (app *application) mount() http.Handler {
 			r.Get("/schedule", app.getHackerScheduleHandler)
 			r.Get("/schedule/date-range", app.getHackerScheduleDateRange)
 			r.Get("/faq", app.getHackerFAQHandler)
+			r.Get("/hacker-links", app.getHackerLinksHandler)
 			r.Get("/hacker-pack", app.getHackerPackHandler)
 			r.Get("/points-config", app.getPointsConfigHandler)
 			r.Get("/hackathon-config", app.getHackathonConfigHandler)
@@ -315,6 +317,14 @@ func (app *application) mount() http.Handler {
 				r.Route("/superadmin", func(r chi.Router) {
 					r.Post("/reset-hackathon", app.resetHackathonHandler)
 					r.Get("/forms/summary", app.getFormsOverview)
+
+					// Hacker links
+					r.Route("/hacker-links", func(r chi.Router) {
+						r.Get("/", app.listHackerLinksHandler)
+						r.Post("/", app.createHackerLinkHandler)
+						r.Put("/{linkID}", app.updateHackerLinkHandler)
+						r.Delete("/{linkID}", app.deleteHackerLinkHandler)
+					})
 
 					// Configs
 					r.Route("/settings", func(r chi.Router) {
