@@ -41,7 +41,3 @@ export interface ScanTypesResponse {
 export interface ScanStatsResponse {
   stats: ScanStat[];
 }
-
-export interface ScansResponse {
-  scans: Scan[];
-}
