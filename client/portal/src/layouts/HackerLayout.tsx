@@ -1,7 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import { Bell, CalendarDays, House, ScanLine, User } from "lucide-react";
+import { useLayoutEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 
+import dragonfly from "@/assets/mascots/dragonfly.webp";
+import jaguar from "@/assets/mascots/jaguar.webp";
+import octopus from "@/assets/mascots/octopus.webp";
+import raccoon from "@/assets/mascots/raccoon_walk.webp";
 import { InstallPromptHost } from "@/components/InstallPromptHost";
 import { PushPromptHost } from "@/components/PushPromptHost";
 import {
@@ -43,6 +48,58 @@ const SIDEBAR_NAV = NAV_ITEMS.map(({ label, to, icon, end }) => ({
 // bar's padding (p-[BOTTOM_NAV_PAD]) and the bubble's inset-y.
 const BOTTOM_NAV_PAD = 0.375;
 
+const ROUTE_MASCOTS = [octopus, dragonfly, raccoon, jaguar] as const;
+
+function mascotForPath(pathname: string) {
+  const routeKey = pathname.split("/").filter(Boolean).join("/") || "app";
+  const hash = [...routeKey].reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  );
+  return ROUTE_MASCOTS[hash % ROUTE_MASCOTS.length];
+}
+
+function HackerRouteMascot({ pathname }: { pathname: string }) {
+  const mascot = mascotForPath(pathname);
+  const isFlying = mascot === dragonfly;
+
+  return (
+    <div
+      key={pathname}
+      aria-hidden
+      className="hacker-route-mascot mascot-roam pointer-events-none fixed top-[12%] right-[5%] z-30 w-12 select-none [--mascot-delay:-7s] [--mascot-duration:25s] [--roam-x:calc(clamp(70px,16vw,180px)*-1)] [--roam-y:clamp(45px,13vh,140px)] sm:w-14 md:right-[7%] md:w-16"
+    >
+      <img
+        src={mascot}
+        alt=""
+        draggable={false}
+        className={cn(
+          "w-full drop-shadow-[0_0_13px_rgba(246,43,232,0.42)]",
+          isFlying
+            ? "mascot-hover [--float:12px] [--mascot-bounce-duration:5.5s]"
+            : "mascot-waddle [--mascot-bounce-duration:3.4s] [--waddle:7px]",
+        )}
+      />
+    </div>
+  );
+}
+
+function HackerJaguarRun() {
+  return (
+    <div
+      aria-hidden
+      className="hacker-jaguar-lane pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[9999] h-24 overflow-hidden select-none md:bottom-[5%] md:h-32"
+    >
+      <img
+        src={jaguar}
+        alt=""
+        draggable={false}
+        className="hacker-jaguar-run absolute bottom-0 left-0 w-[92px] drop-shadow-[0_0_15px_rgba(33,255,240,0.34)] [--jaguar-delay:-30s] [--jaguar-duration:43s] sm:w-[108px] md:w-[138px]"
+      />
+    </div>
+  );
+}
+
 function activeIndex(pathname: string): number {
   return NAV_ITEMS.findIndex((item) =>
     item.end
@@ -62,7 +119,10 @@ function HackerSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="hidden md:flex">
+    <Sidebar
+      collapsible="icon"
+      className="hacker-zero-sidebar hidden border-white/10 md:flex"
+    >
       <SidebarHeader>
         <NavUser user={userData} />
       </SidebarHeader>
@@ -88,17 +148,30 @@ export default function HackerLayout() {
   // bar is hidden there to avoid overlap.
   const hideMobileNav = location.pathname.startsWith("/app/apply");
 
+  // Radix dialogs and menus render into document.body rather than inside the
+  // layout wrapper. Scope the same hacker theme to those portals while this
+  // layout is mounted, then remove it before entering an admin/public route.
+  useLayoutEffect(() => {
+    document.body.classList.add("hacker-zero-portals");
+    return () => document.body.classList.remove("hacker-zero-portals");
+  }, []);
+
   return (
-    <SidebarProvider className="min-h-svh bg-white">
+    <SidebarProvider className="hacker-zero-theme min-h-svh bg-[#030409] text-white">
       {/* Onboarding prompts live here, not in providers.tsx, so they never
           appear on the admin portal or the public auth pages. */}
       <InstallPromptHost />
       <PushPromptHost />
       <HackerSidebar />
+      <HackerRouteMascot pathname={location.pathname} />
+      <HackerJaguarRun />
 
       {/* Page content */}
       <SidebarInset
-        className={cn("bg-white", hideMobileNav ? "pb-0" : "pb-24 md:pb-0")}
+        className={cn(
+          "zero-hacker-surface bg-[#030409]",
+          hideMobileNav ? "pb-0" : "pb-24 md:pb-0",
+        )}
       >
         <div key={location.pathname} className="animate-page-enter">
           <Outlet />

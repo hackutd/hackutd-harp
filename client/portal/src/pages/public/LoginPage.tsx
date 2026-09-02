@@ -1,20 +1,124 @@
-import { useEffect, useState } from "react";
+import { ArrowRight, ArrowUpRight, Mail } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router";
 import { createCode } from "supertokens-auth-react/recipe/passwordless";
 import { useSessionContext } from "supertokens-auth-react/recipe/session";
 import { redirectToThirdPartyLogin } from "supertokens-auth-react/recipe/thirdparty";
 
 import googleIcon from "@/assets/google_icon.webp";
-import logo from "@/branding/assets/logo.webp";
+import zeroDayTitle from "@/assets/title-login.webp";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { isGoogleAuthEnabled } from "@/shared/auth";
 import { checkEmailAuthMethod } from "@/shared/lib/api";
 
 import { fetchLegalConfig } from "./api";
+import MascotField from "./components/MascotField";
 import type { LegalConfig } from "./types";
 
 type LoginState = "email" | "sending" | "sent" | "error";
+
+function ZeroDayShell({ children }: { children: ReactNode }) {
+  return (
+    <main className="zero-login relative isolate min-h-svh overflow-hidden bg-black text-white">
+      <div
+        aria-hidden
+        className="zero-login-grid pointer-events-none absolute inset-0"
+      />
+      <div
+        aria-hidden
+        className="zero-login-scanlines pointer-events-none absolute inset-0 z-20"
+      />
+      <MascotField />
+
+      <div className="pointer-events-none absolute inset-x-5 top-5 z-30 flex items-center justify-between font-mono text-[9px] tracking-[0.28em] text-white/45 uppercase sm:inset-x-8 sm:text-[10px] lg:inset-x-12">
+        <span>HackUTD // Secure portal</span>
+        <span>MMXXVI</span>
+      </div>
+
+      <div className="relative z-10 mx-auto grid min-h-svh w-full max-w-[1500px] lg:grid-cols-[minmax(0,1fr)_minmax(390px,480px)]">
+        <section className="relative flex min-h-[285px] flex-col overflow-hidden px-5 pt-16 sm:min-h-[330px] sm:px-8 lg:min-h-svh lg:overflow-visible lg:px-14 lg:pt-24 lg:pb-12 xl:px-20">
+          <img
+            src={zeroDayTitle}
+            alt="HackUTD Zero Day"
+            className="zero-login-title relative z-10 w-full max-w-[800px] object-contain object-left-top"
+          />
+
+          <div className="relative z-10 mt-auto hidden max-w-sm lg:block">
+            <div className="border-l border-[#21FFF0]/60 pl-4">
+              <p className="font-mono text-[10px] tracking-[0.32em] text-[#21FFF0] uppercase">
+                System entry // 2026
+              </p>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                Your gateway to applications, event access, schedules, and
+                everything HackUTD 2026.
+              </p>
+            </div>
+            <div className="mt-6">
+              <PoweredByHarpLink />
+            </div>
+          </div>
+
+          <img
+            src="/pwa.png"
+            alt=""
+            aria-hidden
+            className="zero-login-hand pointer-events-none absolute -right-14 -bottom-36 w-[330px] max-w-none opacity-50 sm:-right-8 sm:-bottom-44 sm:w-[430px] lg:right-[2%] lg:-bottom-[12%] lg:w-[min(44vw,650px)] lg:opacity-80"
+          />
+        </section>
+
+        <section className="relative flex flex-col items-center justify-center border-t border-white/10 px-5 py-8 sm:px-8 sm:py-12 lg:min-h-svh lg:border-t-0 lg:border-l lg:border-white/10 lg:bg-black/20 lg:px-10">
+          <div
+            aria-hidden
+            className="absolute top-0 left-0 h-px w-20 bg-[#F62BE8] shadow-[0_0_14px_#F62BE8] lg:h-20 lg:w-px"
+          />
+          <div
+            aria-hidden
+            className="absolute right-5 bottom-4 font-mono text-[8px] tracking-[0.3em] text-white/25 uppercase [writing-mode:vertical-rl] lg:right-3 lg:bottom-8"
+          >
+            Identity verification node 01
+          </div>
+          {children}
+          <div className="mt-7 w-full max-w-[420px] lg:hidden">
+            <PoweredByHarpLink />
+          </div>
+        </section>
+      </div>
+
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-4 z-30 hidden -translate-y-1/2 font-mono text-[9px] tracking-[0.4em] text-white/25 uppercase [writing-mode:vertical-rl] lg:block"
+      >
+        HACKUTD // ZERO DAY
+      </div>
+    </main>
+  );
+}
+
+function AccessPanel({ children }: { children: ReactNode }) {
+  return (
+    <div className="zero-login-panel relative z-10 w-full max-w-[420px] p-px">
+      <div className="zero-login-panel-inner px-5 py-6 sm:px-8 sm:py-8">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function PoweredByHarpLink() {
+  return (
+    <a
+      href="https://github.com/hackutd/harp"
+      target="_blank"
+      rel="noreferrer"
+      className="zero-harp-link inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.2em] uppercase"
+    >
+      <span className="text-white/35">Powered by</span>
+      <span className="text-white/70">HARP</span>
+      <ArrowUpRight aria-hidden className="size-3 text-[#21FFF0]/70" />
+    </a>
+  );
+}
 
 export default function Login() {
   const session = useSessionContext();
@@ -108,95 +212,128 @@ export default function Login() {
   // Email sent confirmation screen
   if (state === "sent") {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-white px-6">
-        <div className="w-full max-w-xs space-y-8 text-center">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-black">
-              Check your email
+      <ZeroDayShell>
+        <AccessPanel>
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <p className="font-mono text-[10px] tracking-[0.28em] text-[#21FFF0] uppercase">
+              Link dispatched
+            </p>
+            <span className="h-1.5 w-1.5 bg-[#21FFF0] shadow-[0_0_10px_#21FFF0]" />
+          </div>
+
+          <div className="pt-8 text-center">
+            <span className="mx-auto flex size-14 items-center justify-center border border-[#21FFF0]/50 bg-[#21FFF0]/10 text-[#21FFF0] shadow-[0_0_30px_rgba(33,255,240,0.12)]">
+              <Mail aria-hidden className="size-6" />
+            </span>
+            <h1 className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-white">
+              Check your inbox.
             </h1>
-            <p className="mt-3 text-sm font-light text-[#8A8A8A]">
-              We've sent a magic link to{" "}
-              <span className="font-normal text-black">{email}</span>
+            <p className="mt-3 text-sm leading-6 text-white/55">
+              We sent a secure sign-in link to
+              <span className="mt-1 block font-medium break-all text-white">
+                {email}
+              </span>
             </p>
           </div>
-          <p className="text-sm font-light text-[#8A8A8A]">
-            Click the link in the email to sign in. The link expires in 15
-            minutes.
-          </p>
+
+          <div className="my-7 border-y border-white/10 py-4 font-mono text-[10px] leading-5 tracking-[0.12em] text-white/45 uppercase">
+            Open the link within 15 minutes to enter the hacker portal.
+          </div>
+
           <Button
             variant="outline"
-            className="h-12 w-full rounded-full border-[#E5E5E5] text-sm font-normal"
+            className="zero-cut-button h-12 w-full border-[#21FFF0]/45 bg-transparent text-xs font-medium tracking-[0.18em] text-white uppercase hover:border-[#21FFF0] hover:bg-[#21FFF0]/10 hover:text-white focus-visible:ring-[#21FFF0]/50"
             onClick={handleReset}
           >
             Use a different email
           </Button>
-        </div>
-      </div>
+        </AccessPanel>
+      </ZeroDayShell>
     );
   }
 
   // Email input form
   return (
-    <div className="flex min-h-svh items-center justify-center bg-white px-6">
-      <div className="w-full max-w-xs space-y-8">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-4">
-            <img src={logo} alt="" className="h-18 w-18 shrink-0" />
-            <h1 className="text-left text-sm leading-snug font-medium text-[#8A8A8A]">
-              <span className="block">
-                <span className="text-black">H</span>ackathon
-              </span>
-              <span className="block">
-                <span className="text-black">A</span>pplication
-              </span>
-              <span className="block">
-                <span className="text-black">R</span>eview
-              </span>
-              <span className="block">
-                <span className="text-black">P</span>latform
-              </span>
-            </h1>
+    <ZeroDayShell>
+      <AccessPanel>
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <p className="font-mono text-[10px] tracking-[0.28em] text-[#21FFF0] uppercase">
+            Hacker access // 01
+          </p>
+          <div className="flex items-center gap-1" aria-hidden>
+            <span className="h-1 w-5 bg-[#5900FF]" />
+            <span className="h-1 w-2 bg-[#F62BE8]" />
+            <span className="h-1 w-1 bg-[#21FFF0]" />
           </div>
-          <span className="mx-auto mt-4 block h-px w-10 bg-[#E5E5E5]" />
-          <p className="mt-4 text-sm font-light text-[#8A8A8A]">
-            Login or create an account
+        </div>
+
+        <div className="pt-6">
+          <p className="font-mono text-[10px] tracking-[0.22em] text-white/40 uppercase">
+            Authentication required
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+            Enter Zero Day.
+          </h1>
+          <p className="mt-3 max-w-sm text-sm leading-6 text-white/55">
+            Sign in or create your hacker account with a secure magic link.
           </p>
         </div>
 
-        <div className="space-y-5">
+        <div className="mt-7 space-y-5">
           {state === "error" && error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+            <Alert
+              variant="destructive"
+              className="zero-cut-sm border-[#F62BE8]/55 bg-[#F62BE8]/10 text-[#ff9af8]"
+            >
+              <AlertDescription className="font-mono text-xs leading-5 text-[#ff9af8]">
+                {error}
+              </AlertDescription>
             </Alert>
           )}
 
           {/* Magic Link Form */}
           <form onSubmit={handleEmailSubmit} className="space-y-5">
-            <div className="relative">
-              <input
-                id="email"
-                type="email"
-                placeholder="caleb@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={state === "sending"}
-                className="peer block h-11 w-full border-b border-[#E5E5E5] bg-transparent text-sm font-light text-black placeholder:text-[#B8B8B8] focus:outline-none"
-              />
-              <span
-                aria-hidden
-                className="pointer-events-none absolute right-0 bottom-0 left-0 h-px origin-left scale-x-0 bg-black transition-transform duration-500 ease-out peer-focus:scale-x-100"
-              />
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block font-mono text-[10px] tracking-[0.2em] text-white/55 uppercase"
+              >
+                Email address
+              </label>
+              <div className="relative">
+                <Mail
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[#21FFF0]/70"
+                />
+                <input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={state === "sending"}
+                  className="zero-login-input block h-12 w-full border border-white/15 bg-white/[0.035] pr-4 pl-11 text-sm text-white transition-colors placeholder:text-white/25 hover:border-white/30 focus:border-[#21FFF0]/80 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
             </div>
             <Button
               type="submit"
-              className="h-12 w-full rounded-full bg-black text-sm font-normal text-white hover:bg-black/85"
+              className="zero-cut-button group h-12 w-full bg-[#5900FF] text-xs font-semibold tracking-[0.18em] text-white uppercase shadow-[0_0_26px_rgba(89,0,255,0.24)] hover:bg-[#6d1cff] focus-visible:ring-[#21FFF0]/50"
               disabled={!email}
               loading={state === "sending"}
             >
               {state === "sending"
                 ? "Sending magic link..."
                 : "Send magic link"}
+              {state !== "sending" && (
+                <ArrowRight
+                  aria-hidden
+                  className="size-4 transition-transform group-hover:translate-x-1"
+                />
+              )}
             </Button>
           </form>
 
@@ -204,15 +341,17 @@ export default function Login() {
           {isGoogleAuthEnabled && (
             <>
               <div className="flex items-center gap-3">
-                <span className="h-px flex-1 bg-[#E5E5E5]" />
-                <span className="text-xs font-light text-[#B8B8B8]">or</span>
-                <span className="h-px flex-1 bg-[#E5E5E5]" />
+                <span className="h-px flex-1 bg-white/10" />
+                <span className="font-mono text-[9px] tracking-[0.18em] text-white/30 uppercase">
+                  alternate route
+                </span>
+                <span className="h-px flex-1 bg-white/10" />
               </div>
 
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 w-full rounded-full border-[#E5E5E5] text-sm font-normal"
+                className="zero-cut-button h-12 w-full border-white/20 bg-white/[0.035] text-xs font-medium tracking-[0.12em] text-white uppercase hover:border-[#F62BE8]/70 hover:bg-[#F62BE8]/10 hover:text-white focus-visible:ring-[#F62BE8]/50"
                 onClick={handleGoogleLogin}
               >
                 <img src={googleIcon} alt="" className="mr-2 h-4 w-4" />
@@ -222,14 +361,14 @@ export default function Login() {
           )}
 
           {(legal?.terms_url || legal?.privacy_policy_url) && (
-            <p className="text-center text-xs font-light text-[#B8B8B8]">
+            <p className="text-center text-[11px] leading-5 text-white/35">
               By continuing, you agree to our{" "}
               {legal.terms_url && (
                 <a
                   href={legal.terms_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="underline underline-offset-2"
+                  className="zero-login-legal-link text-white/60"
                 >
                   Terms of Service
                 </a>
@@ -240,7 +379,7 @@ export default function Login() {
                   href={legal.privacy_policy_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="underline underline-offset-2"
+                  className="zero-login-legal-link text-white/60"
                 >
                   Privacy Policy
                 </a>
@@ -248,7 +387,7 @@ export default function Login() {
             </p>
           )}
         </div>
-      </div>
-    </div>
+      </AccessPanel>
+    </ZeroDayShell>
   );
 }

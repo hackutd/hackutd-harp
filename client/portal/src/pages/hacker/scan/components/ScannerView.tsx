@@ -105,7 +105,10 @@ export function ScannerView() {
           Point the camera at a hacker&apos;s QR code
         </p>
 
-        <div className="relative mt-6 aspect-square w-full overflow-hidden rounded-xl bg-black">
+        <div
+          data-hacker-keep-black
+          className="relative mt-6 aspect-square w-full overflow-hidden rounded-xl bg-black"
+        >
           {error ? (
             <div className="flex h-full items-center justify-center p-8 text-center">
               <div className="space-y-3 text-white/80">
