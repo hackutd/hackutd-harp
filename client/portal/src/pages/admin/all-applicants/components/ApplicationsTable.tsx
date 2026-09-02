@@ -2,7 +2,6 @@ import { Maximize2 } from "lucide-react";
 import { memo } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -11,6 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useRedactApplicants } from "@/shared/hooks";
+import { formatApplicantLabel, maskEmail } from "@/shared/lib/redaction";
 import { usePointsConfigStore } from "@/shared/stores";
 
 import type { ApplicationListItem } from "../types";
@@ -30,17 +31,21 @@ export const ApplicationsTable = memo(function ApplicationsTable({
   onSelectApplication,
 }: ApplicationsTableProps) {
   const pointsName = usePointsConfigStore((s) => s.pointsName);
+  const redact = useRedactApplicants();
 
   return (
     <div className="relative overflow-auto h-full p-6 pt-0">
       {loading && (
         <div className="absolute inset-0 bg-white/50 z-10 animate-pulse" />
       )}
-      <Table className="border-collapse table-fixed min-w-[1400px] [&_th]:border-r [&_th]:border-gray-200 [&_td]:border-r [&_td]:border-gray-200 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0">
+      <Table className="border-collapse table-fixed min-w-[1500px] [&_th]:border-r [&_th]:border-gray-200 [&_td]:border-r [&_td]:border-gray-200 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0 [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis">
         <TableHeader className="sticky top-0 bg-card z-10">
           <TableRow>
             <TableHead className="w-28">Status</TableHead>
-            <TableHead className="w-48">Name</TableHead>
+            <TableHead className="w-28">Travel RSVP</TableHead>
+            <TableHead className="w-48">
+              {redact ? "Applicant" : "Name"}
+            </TableHead>
             <TableHead className="w-56">Email</TableHead>
             <TableHead className="w-36">Phone</TableHead>
             <TableHead className="w-16">Age</TableHead>
@@ -60,60 +65,79 @@ export const ApplicationsTable = memo(function ApplicationsTable({
         <TableBody>
           {applications.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={16} className="text-center text-gray-500">
+              <TableCell colSpan={17} className="text-center text-gray-500">
                 No applications found
               </TableCell>
             </TableRow>
           ) : (
-            applications.map((app) => (
-              <TableRow
-                key={app.id}
-                className={`group hover:bg-muted/50 [&>td]:py-3 ${selectedId === app.id ? "bg-muted/50" : ""}`}
-              >
-                <TableCell>
-                  <Badge className={getStatusColor(app.status)}>
-                    {app.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <div className="flex items-center justify-between gap-4">
-                    <span>{formatName(app.first_name, app.last_name)}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="opacity-0 cursor-pointer group-hover:opacity-100 transition-opacity h-6 w-6"
-                      onClick={() => onSelectApplication(app.id)}
-                    >
+            applications.map((app) => {
+              const name = redact
+                ? formatApplicantLabel(app.id)
+                : formatName(app.first_name, app.last_name);
+              const email = redact ? maskEmail(app.email) : app.email;
+
+              const isSelected = selectedId === app.id;
+
+              return (
+                <TableRow
+                  key={app.id}
+                  data-state={isSelected ? "selected" : undefined}
+                  onClick={() => onSelectApplication(app.id)}
+                  className="group cursor-pointer hover:bg-muted [&>td]:py-3"
+                >
+                  <TableCell className="relative">
+                    <Badge className={getStatusColor(app.status)}>
+                      {app.status}
+                    </Badge>
+                    <span className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-md p-1 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
                       <Maximize2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                </TableCell>
-                <TableCell>{app.email}</TableCell>
-                <TableCell>{app.phone ?? "-"}</TableCell>
-                <TableCell>{app.age ?? "-"}</TableCell>
-                <TableCell>{app.country_of_residence ?? "-"}</TableCell>
-                <TableCell>{app.gender ?? "-"}</TableCell>
-                <TableCell>{app.university ?? "-"}</TableCell>
-                <TableCell>{app.major ?? "-"}</TableCell>
-                <TableCell>{app.level_of_study ?? "-"}</TableCell>
-                <TableCell>{app.hackathons_attended ?? "-"}</TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {app.submitted_at
-                    ? new Date(app.submitted_at).toLocaleDateString()
-                    : "-"}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {new Date(app.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {new Date(app.updated_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {app.ai_percent != null ? `${app.ai_percent}%` : "-"}
-                </TableCell>
-                <TableCell className="tabular-nums">{app.points}</TableCell>
-              </TableRow>
-            ))
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(app.travel_rsvp_status)}>
+                      {app.travel_rsvp_status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell title={name}>{name}</TableCell>
+                  <TableCell title={email}>{email}</TableCell>
+                  <TableCell title={app.phone ?? undefined}>
+                    {app.phone ?? "-"}
+                  </TableCell>
+                  <TableCell>{app.age ?? "-"}</TableCell>
+                  <TableCell title={app.country_of_residence ?? undefined}>
+                    {app.country_of_residence ?? "-"}
+                  </TableCell>
+                  <TableCell title={app.gender ?? undefined}>
+                    {app.gender ?? "-"}
+                  </TableCell>
+                  <TableCell title={app.university ?? undefined}>
+                    {app.university ?? "-"}
+                  </TableCell>
+                  <TableCell title={app.major ?? undefined}>
+                    {app.major ?? "-"}
+                  </TableCell>
+                  <TableCell title={app.level_of_study ?? undefined}>
+                    {app.level_of_study ?? "-"}
+                  </TableCell>
+                  <TableCell>{app.hackathons_attended ?? "-"}</TableCell>
+                  <TableCell>
+                    {app.submitted_at
+                      ? new Date(app.submitted_at).toLocaleDateString()
+                      : "-"}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(app.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(app.updated_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {app.ai_percent != null ? `${app.ai_percent}%` : "-"}
+                  </TableCell>
+                  <TableCell className="tabular-nums">{app.points}</TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

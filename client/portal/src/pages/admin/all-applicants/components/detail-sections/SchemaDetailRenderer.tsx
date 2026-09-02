@@ -1,9 +1,12 @@
 import { Label } from "@/components/ui/label";
+import { useRedactApplicants } from "@/shared/hooks";
+import { isRedactedField } from "@/shared/lib/redaction";
 import {
   deriveSections,
   formatResponseValue,
   getResponseValue,
   groupFieldsBySection,
+  isFieldVisible,
 } from "@/shared/lib/schema-utils";
 import type { Application } from "@/types";
 
@@ -17,7 +20,12 @@ export function SchemaDetailRenderer({
   application,
   skipSections = [],
 }: SchemaDetailRendererProps) {
-  const schema = application.application_schema ?? [];
+  const redact = useRedactApplicants();
+  const allFields = application.application_schema ?? [];
+  // Admins grade blind: name, race, and ethnicity never reach the panel.
+  const schema = redact
+    ? allFields.filter((f) => !isRedactedField(f.id))
+    : allFields;
   const responses = application.responses ?? {};
   const sections = deriveSections(schema);
   const grouped = groupFieldsBySection(schema);
@@ -27,7 +35,9 @@ export function SchemaDetailRenderer({
       {sections
         .filter((s) => !skipSections.includes(s.id))
         .map((section) => {
-          const fields = grouped[section.id];
+          const fields = grouped[section.id]?.filter((f) =>
+            isFieldVisible(f, responses),
+          );
           if (!fields || fields.length === 0) return null;
 
           return (
@@ -44,7 +54,7 @@ export function SchemaDetailRenderer({
                     value
                   ) {
                     return (
-                      <div key={field.id} className="col-span-2">
+                      <div key={field.id} className="col-span-full">
                         <Label className="text-muted-foreground text-xs">
                           {field.label}
                         </Label>
@@ -57,6 +67,21 @@ export function SchemaDetailRenderer({
                           >
                             {value}
                           </a>
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  // Short-answer responses run long, so they get their own
+                  // row instead of being squeezed into a grid column.
+                  if (field.type === "textarea") {
+                    return (
+                      <div key={field.id} className="col-span-full">
+                        <Label className="text-muted-foreground text-xs">
+                          {field.label}
+                        </Label>
+                        <p className="whitespace-pre-wrap">
+                          {formatResponseValue(value, field)}
                         </p>
                       </div>
                     );

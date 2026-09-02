@@ -9,6 +9,8 @@ import {
   useGradingKeyboardShortcuts,
 } from "@/pages/admin/_shared/grading";
 import { formatName } from "@/pages/admin/all-applicants/utils";
+import { useRedactApplicants } from "@/shared/hooks";
+import { formatApplicantLabel } from "@/shared/lib/redaction";
 
 import { VoteBadge } from "../components/VoteBadge";
 import type { ReviewVote } from "../types";
@@ -28,15 +30,18 @@ export default function GradingPage() {
   const notesLoading = useAdminGradingStore((s) => s.notesLoading);
   const submitting = useAdminGradingStore((s) => s.submitting);
   const localNotes = useAdminGradingStore((s) => s.localNotes);
+  const localTravelVote = useAdminGradingStore((s) => s.localTravelVote);
   const fetchReviews = useAdminGradingStore((s) => s.fetchReviews);
   const loadDetail = useAdminGradingStore((s) => s.loadDetail);
   const navigateNext = useAdminGradingStore((s) => s.navigateNext);
   const navigatePrev = useAdminGradingStore((s) => s.navigatePrev);
   const submitVote = useAdminGradingStore((s) => s.submitVote);
   const setLocalNotes = useAdminGradingStore((s) => s.setLocalNotes);
+  const setLocalTravelVote = useAdminGradingStore((s) => s.setLocalTravelVote);
   const reset = useAdminGradingStore((s) => s.reset);
 
   const [aiPercent, setAiPercent] = useState<number | null>(null);
+  const redact = useRedactApplicants();
 
   const currentReview = reviews[currentIndex] ?? null;
 
@@ -67,10 +72,17 @@ export default function GradingPage() {
   const handleVote = useCallback(
     (vote: ReviewVote) => {
       if (currentReview && !submitting && !currentReview.vote) {
+        // A travel yes/no is required when the applicant requested travel
+        if (
+          currentReview.travel_status !== "not_requested" &&
+          localTravelVote === null
+        ) {
+          return;
+        }
         submitVote(currentReview.id, vote);
       }
     },
-    [currentReview, submitting, submitVote],
+    [currentReview, submitting, submitVote, localTravelVote],
   );
 
   useGradingKeyboardShortcuts({
@@ -92,7 +104,9 @@ export default function GradingPage() {
         currentReview ? (
           <>
             <p className="font-semibold">
-              {formatName(currentReview.first_name, currentReview.last_name)}
+              {redact
+                ? formatApplicantLabel(currentReview.application_id)
+                : formatName(currentReview.first_name, currentReview.last_name)}
             </p>
             <VoteBadge vote={currentReview.vote} />
           </>
@@ -134,8 +148,10 @@ export default function GradingPage() {
             notesLoading={notesLoading}
             submitting={submitting}
             aiPercent={aiPercent}
+            travelVote={localTravelVote}
             onAiPercentUpdate={setAiPercent}
             onNotesChange={setLocalNotes}
+            onTravelVoteChange={setLocalTravelVote}
             onVote={handleVote}
           />
         ) : null

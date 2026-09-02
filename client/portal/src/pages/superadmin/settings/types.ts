@@ -12,6 +12,7 @@ export interface ResetHackathonOptions {
 
 export interface ResetHackathonResult extends ResetHackathonOptions {
   resumes_deleted: number;
+  receipts_deleted: number;
 }
 
 export interface MealGroupsResult {
@@ -23,6 +24,10 @@ export interface MealGroupStatsResult {
 }
 
 export interface HackerPackURLResult {
+  url: string;
+}
+
+export interface URLSettingResult {
   url: string;
 }
 
@@ -75,4 +80,6 @@ export interface OnboardingValues {
   contact_email: string;
   from_email: string;
   from_name: string;
+  privacy_policy_url: string;
+  terms_url: string;
 }
