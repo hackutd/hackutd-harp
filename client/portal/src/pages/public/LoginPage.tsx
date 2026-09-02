@@ -36,12 +36,12 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
         <span>MMXXVI</span>
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-svh w-full max-w-[1500px] lg:grid-cols-[minmax(0,1fr)_minmax(390px,480px)]">
-        <section className="relative flex min-h-[285px] flex-col overflow-hidden px-5 pt-16 sm:min-h-[330px] sm:px-8 lg:min-h-svh lg:overflow-visible lg:px-14 lg:pt-24 lg:pb-12 xl:px-20">
+      <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-[1500px] flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(390px,480px)]">
+        <section className="relative flex shrink-0 flex-col overflow-hidden px-5 pt-12 sm:px-8 sm:pt-14 lg:min-h-svh lg:overflow-visible lg:px-14 lg:pt-24 lg:pb-12 xl:px-20">
           <img
             src={zeroDayTitle}
             alt="HackUTD Zero Day"
-            className="zero-login-title relative z-10 w-full max-w-[800px] object-contain object-left-top"
+            className="zero-login-title relative z-10 max-h-[15svh] w-full max-w-[800px] object-contain object-left-top lg:max-h-none"
           />
 
           <div className="relative z-10 mt-auto hidden max-w-sm lg:block">
@@ -63,11 +63,21 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
             src="/pwa.png"
             alt=""
             aria-hidden
-            className="zero-login-hand pointer-events-none absolute -right-14 -bottom-36 w-[330px] max-w-none opacity-50 sm:-right-8 sm:-bottom-44 sm:w-[430px] lg:right-[2%] lg:-bottom-[12%] lg:w-[min(44vw,650px)] lg:opacity-80"
+            className="zero-login-hand pointer-events-none absolute right-[2%] -bottom-[12%] hidden w-[min(44vw,650px)] max-w-none opacity-80 lg:block"
           />
         </section>
 
-        <section className="relative flex flex-col items-center justify-center border-t border-white/10 px-5 py-8 sm:px-8 sm:py-12 lg:min-h-svh lg:border-t-0 lg:border-l lg:border-white/10 lg:bg-black/20 lg:px-10">
+        <section className="relative flex min-h-0 flex-1 flex-col items-center justify-center border-t border-white/10 px-5 py-5 sm:px-8 sm:py-10 lg:min-h-svh lg:border-t-0 lg:border-l lg:border-white/10 lg:bg-black/20 lg:px-10 lg:py-12">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-0 right-0 z-0 w-[min(125%,430px)] max-w-none translate-x-[14%] -translate-y-[7%] lg:hidden"
+          >
+            <img
+              src="/pwa.png"
+              alt=""
+              className="zero-login-hand w-full opacity-60"
+            />
+          </div>
           <div
             aria-hidden
             className="absolute top-0 left-0 h-px w-20 bg-[#F62BE8] shadow-[0_0_14px_#F62BE8] lg:h-20 lg:w-px"
@@ -79,7 +89,7 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
             Identity verification node 01
           </div>
           {children}
-          <div className="mt-7 w-full max-w-[420px] lg:hidden">
+          <div className="mt-4 w-full max-w-[420px] sm:mt-6 lg:hidden">
             <PoweredByHarpLink />
           </div>
         </section>
@@ -98,7 +108,7 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
 function AccessPanel({ children }: { children: ReactNode }) {
   return (
     <div className="zero-login-panel relative z-10 w-full max-w-[420px] p-px">
-      <div className="zero-login-panel-inner px-5 py-6 sm:px-8 sm:py-8">
+      <div className="zero-login-panel-inner px-4 py-5 sm:px-8 sm:py-8">
         {children}
       </div>
     </div>
@@ -214,21 +224,21 @@ export default function Login() {
     return (
       <ZeroDayShell>
         <AccessPanel>
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3 sm:pb-4">
             <p className="font-mono text-[10px] tracking-[0.28em] text-[#21FFF0] uppercase">
               Link dispatched
             </p>
             <span className="h-1.5 w-1.5 bg-[#21FFF0] shadow-[0_0_10px_#21FFF0]" />
           </div>
 
-          <div className="pt-8 text-center">
-            <span className="mx-auto flex size-14 items-center justify-center border border-[#21FFF0]/50 bg-[#21FFF0]/10 text-[#21FFF0] shadow-[0_0_30px_rgba(33,255,240,0.12)]">
+          <div className="pt-6 text-center sm:pt-8">
+            <span className="mx-auto flex size-12 items-center justify-center border border-[#21FFF0]/50 bg-[#21FFF0]/10 text-[#21FFF0] shadow-[0_0_30px_rgba(33,255,240,0.12)] sm:size-14">
               <Mail aria-hidden className="size-6" />
             </span>
-            <h1 className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-white">
+            <h1 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white sm:mt-6 sm:text-3xl">
               Check your inbox.
             </h1>
-            <p className="mt-3 text-sm leading-6 text-white/55">
+            <p className="mt-2 text-xs leading-5 text-white/55 sm:mt-3 sm:text-sm sm:leading-6">
               We sent a secure sign-in link to
               <span className="mt-1 block font-medium break-all text-white">
                 {email}
@@ -236,13 +246,13 @@ export default function Login() {
             </p>
           </div>
 
-          <div className="my-7 border-y border-white/10 py-4 font-mono text-[10px] leading-5 tracking-[0.12em] text-white/45 uppercase">
+          <div className="my-5 border-y border-white/10 py-3 font-mono text-[10px] leading-5 tracking-[0.12em] text-white/45 uppercase sm:my-7 sm:py-4">
             Open the link within 15 minutes to enter the hacker portal.
           </div>
 
           <Button
             variant="outline"
-            className="zero-cut-button h-12 w-full border-[#21FFF0]/45 bg-transparent text-xs font-medium tracking-[0.18em] text-white uppercase hover:border-[#21FFF0] hover:bg-[#21FFF0]/10 hover:text-white focus-visible:ring-[#21FFF0]/50"
+            className="zero-cut-button h-11 w-full sm:h-12 border-[#21FFF0]/45 bg-transparent text-xs font-medium tracking-[0.18em] text-white uppercase hover:border-[#21FFF0] hover:bg-[#21FFF0]/10 hover:text-white focus-visible:ring-[#21FFF0]/50"
             onClick={handleReset}
           >
             Use a different email
@@ -256,7 +266,7 @@ export default function Login() {
   return (
     <ZeroDayShell>
       <AccessPanel>
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3 sm:pb-4">
           <p className="font-mono text-[10px] tracking-[0.28em] text-[#21FFF0] uppercase">
             Hacker access // 01
           </p>
@@ -267,19 +277,19 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="pt-6">
+        <div className="pt-4 sm:pt-6">
           <p className="font-mono text-[10px] tracking-[0.22em] text-white/40 uppercase">
             Authentication required
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+          <h1 className="mt-1.5 text-2xl font-semibold tracking-[-0.04em] text-white sm:mt-2 sm:text-4xl">
             Enter Zero Day.
           </h1>
-          <p className="mt-3 max-w-sm text-sm leading-6 text-white/55">
+          <p className="zero-login-blurb mt-2 max-w-sm text-xs leading-5 text-white/55 sm:mt-3 sm:text-sm sm:leading-6">
             Sign in or create your hacker account with a secure magic link.
           </p>
         </div>
 
-        <div className="mt-7 space-y-5">
+        <div className="mt-5 space-y-4 sm:mt-7 sm:space-y-5">
           {state === "error" && error && (
             <Alert
               variant="destructive"
@@ -292,11 +302,11 @@ export default function Login() {
           )}
 
           {/* Magic Link Form */}
-          <form onSubmit={handleEmailSubmit} className="space-y-5">
+          <form onSubmit={handleEmailSubmit} className="space-y-4 sm:space-y-5">
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block font-mono text-[10px] tracking-[0.2em] text-white/55 uppercase"
+                className="mb-1.5 block font-mono text-[10px] tracking-[0.2em] text-white/55 uppercase sm:mb-2"
               >
                 Email address
               </label>
@@ -315,13 +325,13 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={state === "sending"}
-                  className="zero-login-input block h-12 w-full border border-white/15 bg-white/[0.035] pr-4 pl-11 text-sm text-white transition-colors placeholder:text-white/25 hover:border-white/30 focus:border-[#21FFF0]/80 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="zero-login-input block h-11 w-full sm:h-12 border border-white/15 bg-white/[0.035] pr-4 pl-11 text-sm text-white transition-colors placeholder:text-white/25 hover:border-white/30 focus:border-[#21FFF0]/80 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
             </div>
             <Button
               type="submit"
-              className="zero-cut-button group h-12 w-full bg-[#5900FF] text-xs font-semibold tracking-[0.18em] text-white uppercase shadow-[0_0_26px_rgba(89,0,255,0.24)] hover:bg-[#6d1cff] focus-visible:ring-[#21FFF0]/50"
+              className="zero-cut-button group h-11 w-full sm:h-12 bg-[#5900FF] text-xs font-semibold tracking-[0.18em] text-white uppercase shadow-[0_0_26px_rgba(89,0,255,0.24)] hover:bg-[#6d1cff] focus-visible:ring-[#21FFF0]/50"
               disabled={!email}
               loading={state === "sending"}
             >
@@ -351,7 +361,7 @@ export default function Login() {
               <Button
                 type="button"
                 variant="outline"
-                className="zero-cut-button h-12 w-full border-white/20 bg-white/[0.035] text-xs font-medium tracking-[0.12em] text-white uppercase hover:border-[#F62BE8]/70 hover:bg-[#F62BE8]/10 hover:text-white focus-visible:ring-[#F62BE8]/50"
+                className="zero-cut-button h-11 w-full sm:h-12 border-white/20 bg-white/[0.035] text-xs font-medium tracking-[0.12em] text-white uppercase hover:border-[#F62BE8]/70 hover:bg-[#F62BE8]/10 hover:text-white focus-visible:ring-[#F62BE8]/50"
                 onClick={handleGoogleLogin}
               >
                 <img src={googleIcon} alt="" className="mr-2 h-4 w-4" />
@@ -361,7 +371,7 @@ export default function Login() {
           )}
 
           {(legal?.terms_url || legal?.privacy_policy_url) && (
-            <p className="text-center text-[11px] leading-5 text-white/35">
+            <p className="text-center text-[10px] leading-4 text-white/35 sm:text-[11px] sm:leading-5">
               By continuing, you agree to our{" "}
               {legal.terms_url && (
                 <a
