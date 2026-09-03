@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router";
 
 import { ErrorPage } from "@/components/ErrorPage";
+import { HackerPageLoader } from "@/components/HackerPageLoader";
 import { PageLoader } from "@/components/PageLoader";
 // Auth pages stay eager (critical path)
 import {
@@ -104,7 +105,7 @@ export const router = createBrowserRouter([
         path: "/app",
         element: (
           <RequireAuth>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<HackerPageLoader fullscreen />}>
               <HackerLayout />
             </Suspense>
           </RequireAuth>
@@ -113,7 +114,7 @@ export const router = createBrowserRouter([
           {
             index: true,
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <DashboardPage />
               </Suspense>
             ),
@@ -121,7 +122,7 @@ export const router = createBrowserRouter([
           {
             path: "apply",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <ApplyPage />
               </Suspense>
             ),
@@ -139,7 +140,7 @@ export const router = createBrowserRouter([
           {
             path: "application",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <ApplicationDetailPage />
               </Suspense>
             ),
@@ -147,7 +148,7 @@ export const router = createBrowserRouter([
           {
             path: "rsvp",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerRSVPPage />
               </Suspense>
             ),
@@ -155,7 +156,7 @@ export const router = createBrowserRouter([
           {
             path: "travel-rsvp",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerTravelRSVPPage />
               </Suspense>
             ),
@@ -163,7 +164,7 @@ export const router = createBrowserRouter([
           {
             path: "scan",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerScanPage />
               </Suspense>
             ),
@@ -171,7 +172,7 @@ export const router = createBrowserRouter([
           {
             path: "schedule",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerSchedulePage />
               </Suspense>
             ),
@@ -179,7 +180,7 @@ export const router = createBrowserRouter([
           {
             path: "profile",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerProfilePage />
               </Suspense>
             ),
@@ -187,7 +188,7 @@ export const router = createBrowserRouter([
           {
             path: "notifications",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerNotificationsPage />
               </Suspense>
             ),
@@ -195,7 +196,7 @@ export const router = createBrowserRouter([
           {
             path: "faq",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerFAQPage />
               </Suspense>
             ),
@@ -203,7 +204,7 @@ export const router = createBrowserRouter([
           {
             path: "hacker-pack",
             element: (
-              <Suspense fallback={<PageLoader />}>
+              <Suspense fallback={<HackerPageLoader />}>
                 <HackerPackPage />
               </Suspense>
             ),

@@ -94,9 +94,13 @@ export const ApplicationsTable = memo(function ApplicationsTable({
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(app.travel_rsvp_status)}>
-                      {app.travel_rsvp_status}
-                    </Badge>
+                    {app.travel_status === "not_requested" ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      <Badge className={getStatusColor(app.travel_rsvp_status)}>
+                        {app.travel_rsvp_status}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell title={name}>{name}</TableCell>
                   <TableCell title={email}>{email}</TableCell>
