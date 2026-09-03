@@ -23,7 +23,6 @@ func TestMagicLinkTemplateRenders(t *testing.T) {
 		"hacker@example.com",
 		"https://portal.test/auth/verify?token=abc123",
 		"cid:zero-day-title.webp",
-		`bgcolor="#FFFFFF"`,
 		`bgcolor="#0B0C15"`,
 		"15 minutes",
 		"HackUTD 2026",
@@ -48,10 +47,12 @@ func TestBrandImageLoads(t *testing.T) {
 	}
 }
 
-// Every template shares the Zero Day frame from magic_link: white canvas,
-// dark card, inline title image, and the Harp footer. The image is attached
-// by Content-ID on every send, so a template that forgets it renders a
-// dangling attachment instead of the header.
+// Every template shares the Zero Day frame from magic_link: an unpainted
+// canvas the client colours, the dark card, the inline title image, and the
+// Harp footer. The image is attached by Content-ID on every send, so a
+// template that forgets it renders a dangling attachment instead of the
+// header. The color-scheme declaration is what keeps inversion-aware clients
+// from repainting the card, so it is asserted alongside the frame.
 func TestAllTemplatesShareZeroDayTheme(t *testing.T) {
 	decision := decisionEmailData{Name: "Ada", HackathonName: "HackUTD 2026", PortalURL: "https://portal.test", From: "HackUTD"}
 	templates := map[string]any{
@@ -76,8 +77,9 @@ func TestAllTemplatesShareZeroDayTheme(t *testing.T) {
 			}
 			for _, want := range []string{
 				"cid:" + brandImageContentID,
-				`bgcolor="#FFFFFF"`,
 				`bgcolor="#0B0C15"`,
+				`<meta name="color-scheme" content="light dark" />`,
+				`<meta name="supported-color-schemes" content="light dark" />`,
 				"HackUTD 2026",
 				"Powered by Harp",
 			} {

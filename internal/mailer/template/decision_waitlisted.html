@@ -4,13 +4,38 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>You're on the {{.HackathonName}} waitlist</title>
+    <!-- The canvas is left unpainted so each client supplies it — white in a
+         light client, the client's own dark grey in a dark one — while the card
+         below stays on its Zero Day palette in both. Declaring the schemes is
+         what stops Apple Mail, iOS Mail, Outlook.com and Outlook mobile from
+         inverting the card on their own; the Gmail app ignores the declaration
+         and inverts by luminance, which no email can opt out of. Text is
+         #f8f8ff rather than #ffffff because pure white and pure black are the
+         values clients most aggressively repaint. -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
+      /* Clients that honour the query keep the card on its own palette instead
+         of a generated one; [data-ogsc] covers Outlook for Android, which
+         rewrites colors rather than supporting the query. */
+      @media (prefers-color-scheme: dark) {
+        .zd-card {
+          background-color: #0b0c15 !important;
+        }
+      }
+      [data-ogsc] .zd-card {
+        background-color: #0b0c15 !important;
+      }
+    </style>
   </head>
   <body
     style="
       margin: 0;
       padding: 0;
-      background-color: #ffffff;
-      color: #111111;
       font-family: Arial, Helvetica, sans-serif;
     "
   >
@@ -28,17 +53,17 @@
 
     <table
       role="presentation"
-      bgcolor="#FFFFFF"
       width="100%"
       cellpadding="0"
       cellspacing="0"
       border="0"
-      style="width: 100%; background-color: #ffffff"
+      style="width: 100%"
     >
       <tr>
         <td align="center" style="padding: 40px 16px">
           <table
             role="presentation"
+            class="zd-card"
             bgcolor="#0B0C15"
             width="600"
             cellpadding="0"
@@ -154,7 +179,7 @@
                         "
                       >
                         You're on the
-                        <strong style="color: #ffffff">{{.HackathonName}}</strong>
+                        <strong style="color: #f8f8ff">{{.HackathonName}}</strong>
                         waitlist. We had more strong applications than spots.
                       </p>
                       <p

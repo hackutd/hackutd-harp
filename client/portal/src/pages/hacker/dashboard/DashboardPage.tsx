@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { CelebrationEffect } from "@/components/CelebrationEffect";
+import { HackerPageLoader } from "@/components/HackerPageLoader";
 import { getRequest } from "@/shared/lib/api";
 import { parseDateOnly } from "@/shared/lib/datetime";
 import { hackerLinkIcon } from "@/shared/lib/hacker-link-icons";
@@ -130,11 +131,14 @@ export default function DashboardPage() {
   const [hackerPackURL, setHackerPackURL] = useState("");
   const [config, setConfig] = useState<HackathonConfig | null>(null);
   const [hackerLinks, setHackerLinks] = useState<HackerLink[]>([]);
-  // null until the flag loads — the closed state only renders once we know
-  // applications really are closed, so the card never flashes the wrong copy.
   const [applicationsEnabled, setApplicationsEnabled] = useState<
     boolean | null
   >(null);
+  // The card's copy and its call to action both depend on data that arrives
+  // after mount, so the skeleton stays up until the first load settles —
+  // otherwise a closed portal briefly renders "Continue" and a hacker can
+  // click through to the wizard before the flag lands.
+  const [loading, setLoading] = useState(true);
 
   // Grab the "justSubmitted" ID from navigation state then clear it
   // so back-navigation doesn't re-trigger the submit celebration.
@@ -201,6 +205,7 @@ export default function DashboardPage() {
             .sort((a, b) => a.display_order - b.display_order),
         );
       }
+      setLoading(false);
     };
     load();
     return () => controller.abort();
@@ -262,6 +267,12 @@ export default function DashboardPage() {
                       body: `Applications for ${hackathonName} are open`,
                     },
         ];
+
+  // Continues the route's Suspense fallback so the skeleton doesn't blink out
+  // between the chunk resolving and the dashboard data arriving.
+  if (loading) {
+    return <HackerPageLoader />;
+  }
 
   return (
     <div className="relative isolate mx-auto min-h-svh max-w-2xl px-5 pt-4 pb-6 text-white md:max-w-5xl md:px-8 md:pt-6">
