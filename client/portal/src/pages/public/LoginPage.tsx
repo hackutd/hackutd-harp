@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Mail } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router";
 import { createCode } from "supertokens-auth-react/recipe/passwordless";
@@ -6,6 +6,7 @@ import { useSessionContext } from "supertokens-auth-react/recipe/session";
 import { redirectToThirdPartyLogin } from "supertokens-auth-react/recipe/thirdparty";
 
 import googleIcon from "@/assets/google_icon.webp";
+import logoGlitch from "@/assets/logo_glitch.webp";
 import zeroDayTitle from "@/assets/title-login.webp";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,21 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
       <MascotField />
 
       <div className="pointer-events-none absolute inset-x-5 top-5 z-30 flex items-center justify-between font-mono text-[9px] tracking-[0.28em] text-white/45 uppercase sm:inset-x-8 sm:text-[10px] lg:inset-x-12">
-        <span>HackUTD // Secure portal</span>
+        <a
+          href="https://zeroday.hackutd.co"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="HackUTD Zero Day"
+          className="group pointer-events-auto flex translate-y-1 items-center gap-3"
+        >
+          <ArrowLeft
+            aria-hidden
+            className="size-5 text-[#21FFF0] transition-transform group-hover:-translate-x-1 sm:size-5"
+          />
+          <span className="hidden text-[11px] transition-colors group-hover:text-white sm:inline sm:text-xs">
+            HackUTD // Secure portal
+          </span>
+        </a>
         <span>MMXXVI</span>
       </div>
 
@@ -60,7 +75,7 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
           </div>
 
           <img
-            src="/pwa.png"
+            src={logoGlitch}
             alt=""
             aria-hidden
             className="zero-login-hand pointer-events-none absolute right-[2%] -bottom-[12%] hidden w-[min(44vw,650px)] max-w-none opacity-80 lg:block"
@@ -73,7 +88,7 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
             className="pointer-events-none absolute top-0 right-0 z-0 w-[min(125%,430px)] max-w-none translate-x-[14%] -translate-y-[7%] lg:hidden"
           >
             <img
-              src="/pwa.png"
+              src={logoGlitch}
               alt=""
               className="zero-login-hand w-full opacity-60"
             />
