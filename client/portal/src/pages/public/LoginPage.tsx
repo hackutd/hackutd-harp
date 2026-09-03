@@ -35,8 +35,6 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
       <div className="pointer-events-none absolute inset-x-5 top-5 z-30 flex items-center justify-between font-mono text-[9px] tracking-[0.28em] text-white/45 uppercase sm:inset-x-8 sm:text-[10px] lg:inset-x-12">
         <a
           href="https://zeroday.hackutd.co"
-          target="_blank"
-          rel="noreferrer"
           aria-label="HackUTD Zero Day"
           className="group pointer-events-auto flex translate-y-1 items-center gap-3"
         >
