@@ -76,6 +76,7 @@ const AdminGradingPage = lazy(
 );
 const SponsorsPage = lazy(() => import("@/pages/admin/sponsors/SponsorsPage"));
 const FAQAdminPage = lazy(() => import("@/pages/admin/faq/FAQPage"));
+const TracksPage = lazy(() => import("@/pages/admin/tracks/TracksPage"));
 
 export const router = createBrowserRouter([
   {
@@ -280,6 +281,14 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <FAQAdminPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "tracks",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <TracksPage />
               </Suspense>
             ),
           },
