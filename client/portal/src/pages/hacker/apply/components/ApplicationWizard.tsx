@@ -1,4 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -34,7 +33,7 @@ import {
 import { ReviewStep } from "../steps/ReviewStep";
 import { SchemaStepRenderer } from "../steps/SchemaStepRenderer";
 import { SponsorInfoStep } from "../steps/SponsorInfoStep";
-import { buildApplicationSchema } from "../validations";
+import { buildApplicationResolver } from "../validations";
 import { StepIndicator } from "./StepIndicator";
 import { StepNavigation } from "./StepNavigation";
 
@@ -170,14 +169,16 @@ export function ApplicationWizard({ userEmail }: ApplicationWizardProps) {
     [schemaFields],
   );
 
-  // Build Zod schema dynamically from application_schema
-  const formSchema = useMemo(
-    () => buildApplicationSchema(schemaFields),
+  // Validate against a schema rebuilt from the current answers, so a question
+  // that only applies once another is answered (e.g. the travel questions
+  // behind the reimbursement opt-in) is enforced as soon as it appears.
+  const resolver = useMemo(
+    () => buildApplicationResolver(schemaFields),
     [schemaFields],
   );
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver,
     defaultValues: buildDefaultValues(schemaFields),
     mode: "onTouched",
   });

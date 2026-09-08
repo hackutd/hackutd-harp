@@ -1,4 +1,6 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { createElement, type ReactNode } from "react";
+import type { Resolver } from "react-hook-form";
 import { z } from "zod";
 
 import type { ApplicationSchemaField } from "@/types";
@@ -174,6 +176,8 @@ export function getWholeNumberRule(
 /** Build a Zod schema for a single field based on its ApplicationSchemaField definition. */
 function buildFieldZod(field: ApplicationSchemaField): z.ZodType {
   const validation = field.validation ?? {};
+  // Agreement labels carry markdown links; error messages name the question only.
+  const label = stripLabelLinks(field.label);
 
   switch (field.type) {
     case "text": {
@@ -182,7 +186,7 @@ function buildFieldZod(field: ApplicationSchemaField): z.ZodType {
         // it all the way to the server, which trims before its own check.
         return z
           .string()
-          .refine((v) => v.trim() !== "", `${field.label} is required`);
+          .refine((v) => v.trim() !== "", `${label} is required`);
       }
       return z.string().optional().default("");
     }
@@ -191,10 +195,7 @@ function buildFieldZod(field: ApplicationSchemaField): z.ZodType {
       const usPhone = /^\+1\d{10}$/;
       const msg = "Enter a 10-digit US phone number";
       if (field.required) {
-        return z
-          .string()
-          .min(1, `${field.label} is required`)
-          .regex(usPhone, msg);
+        return z.string().min(1, `${label} is required`).regex(usPhone, msg);
       }
       return z
         .string()
@@ -203,9 +204,9 @@ function buildFieldZod(field: ApplicationSchemaField): z.ZodType {
         .refine((v) => !v || usPhone.test(v), msg);
     }
     case "number": {
-      let n = z.coerce.number({ message: `${field.label} is required` });
+      let n = z.coerce.number({ message: `${label} is required` });
       const whole = getWholeNumberRule(field.id);
-      if (whole) n = n.int(`${field.label} must be a whole number`);
+      if (whole) n = n.int(`${label} must be a whole number`);
 
       const schemaMin =
         typeof validation.min === "number"
@@ -218,10 +219,10 @@ function buildFieldZod(field: ApplicationSchemaField): z.ZodType {
         : schemaMin;
 
       if (typeof min === "number")
-        n = n.min(min, `${field.label} must be at least ${min}`);
+        n = n.min(min, `${label} must be at least ${min}`);
       if (typeof validation.max === "number") {
         const max = validation.max as number;
-        n = n.max(max, `${field.label} must be at most ${max}`);
+        n = n.max(max, `${label} must be at most ${max}`);
       }
       if (field.required && typeof min !== "number") n = n.min(0);
 
@@ -235,30 +236,30 @@ function buildFieldZod(field: ApplicationSchemaField): z.ZodType {
         const maxLength = validation.maxLength as number;
         s = s.max(
           maxLength,
-          `${field.label} must be ${maxLength} characters or fewer`,
+          `${label} must be ${maxLength} characters or fewer`,
         );
       }
       if (field.required) {
-        return s.refine((v) => v.trim() !== "", `${field.label} is required`);
+        return s.refine((v) => v.trim() !== "", `${label} is required`);
       }
       return s;
     }
     case "select": {
       if (field.required) {
-        return z.string().min(1, `${field.label} is required`);
+        return z.string().min(1, `${label} is required`);
       }
       return z.string().optional().default("");
     }
     case "multi_select": {
       if (field.required) {
-        return z.array(z.string()).min(1, `${field.label} is required`);
+        return z.array(z.string()).min(1, `${label} is required`);
       }
       return z.array(z.string()).optional().default([]);
     }
     case "checkbox":
       if (field.required) {
         return z.literal(true, {
-          message: `${stripLabelLinks(field.label)} is required`,
+          message: `${label} is required`,
         });
       }
       return z.boolean().optional().default(false);
@@ -271,60 +272,86 @@ function buildFieldZod(field: ApplicationSchemaField): z.ZodType {
  * Build a Zod object schema from an array of ApplicationSchemaField definitions.
  * Returns a z.object() with one key per field.
  *
- * Requiredness for conditional fields is decided in the refinement rather than
- * in the per-field schema, because it depends on another field's answer:
+ * Conditional requiredness (validation.show_if / required_if) depends on
+ * another field's answer, so it is resolved against `values` — the answers
+ * being validated — and baked into the per-field schema:
  * - a field hidden by an unsatisfied "show_if" is never required (the step
  *   validator triggers every field in a section, including hidden ones, so
  *   enforcing it would block the step with nothing on screen to fix);
- * - a field with "required_if" becomes required once its controller is set.
+ * - a field with "required_if" is required once its controller is set.
+ *
+ * The rules live in the per-field schemas rather than in a top-level
+ * superRefine because Zod drops an object's refinements as soon as one of its
+ * properties raises a fatal issue — an untouched required number, or an
+ * unchecked required checkbox (z.literal(true)), both of which are the norm
+ * while the form is still being filled in. That silently disabled every
+ * conditional rule until the rest of the form was already valid, letting the
+ * wizard advance past an opted-in-but-empty travel section and only catching
+ * it at submit.
+ *
+ * Callers that validate live answers should use buildSchemaResolver, which
+ * feeds the current values back in on every validation pass. Omitting values
+ * treats every condition as unsatisfied.
  */
-export function buildZodSchema(fields: ApplicationSchemaField[]) {
-  const conditional = fields.map((f) => ({
-    field: f,
-    showIf: getFieldCondition(f, "show_if"),
-    requiredIf: getFieldCondition(f, "required_if"),
-  }));
-
+export function buildZodSchema(
+  fields: ApplicationSchemaField[],
+  values?: Record<string, unknown> | null,
+) {
   const shape: Record<string, z.ZodType> = {};
-  for (const { field, showIf } of conditional) {
-    // A show_if-gated field is shaped as optional; the refinement below applies
-    // its requiredness only while it is actually visible.
-    shape[field.id] = buildFieldZod(
-      showIf ? { ...field, required: false } : field,
-    );
+
+  for (const field of fields) {
+    const showIf = getFieldCondition(field, "show_if");
+    const requiredIf = getFieldCondition(field, "required_if");
+
+    const visible = !showIf || conditionSatisfied(showIf, values);
+    const required =
+      visible &&
+      (field.required ||
+        (!!requiredIf && conditionSatisfied(requiredIf, values)));
+
+    shape[field.id] = buildFieldZod({ ...field, required });
   }
 
-  const refined = conditional.filter((c) => c.showIf || c.requiredIf);
-
-  return z.object(shape).superRefine((data, ctx) => {
-    for (const { field, showIf, requiredIf } of refined) {
-      if (showIf && !conditionSatisfied(showIf, data)) continue;
-
-      const required =
-        field.required ||
-        (!!requiredIf && conditionSatisfied(requiredIf, data));
-      if (!required) continue;
-
-      if (isEmptyValue(data[field.id])) {
-        ctx.addIssue({
-          code: "custom",
-          path: [field.id],
-          message: `${stripLabelLinks(field.label)} is required`,
-        });
-      }
-    }
-  });
+  return z.object(shape);
 }
 
-/** True when an answer counts as unanswered: blank, unchecked, or nothing picked. */
-function isEmptyValue(value: unknown): boolean {
-  return (
-    value === undefined ||
-    value === null ||
-    value === false ||
-    (typeof value === "string" && value.trim() === "") ||
-    (Array.isArray(value) && value.length === 0)
-  );
+/** Field ids that gate another field's visibility or requiredness. */
+function conditionControllerIds(fields: ApplicationSchemaField[]): string[] {
+  return [
+    ...new Set(
+      fields.flatMap((f) =>
+        [
+          getFieldCondition(f, "show_if")?.field,
+          getFieldCondition(f, "required_if")?.field,
+        ].filter((id): id is string => !!id),
+      ),
+    ),
+  ];
+}
+
+/**
+ * React Hook Form resolver for a dynamic application schema. The schema is
+ * rebuilt from the answers under validation so show_if / required_if rules see
+ * the current controller values; the build is reused until one of those
+ * controllers changes.
+ */
+export function buildSchemaResolver(
+  fields: ApplicationSchemaField[],
+): Resolver<Record<string, unknown>> {
+  const controllerIds = conditionControllerIds(fields);
+  let cachedKey: string | undefined;
+  let cachedResolver: Resolver<Record<string, unknown>> | undefined;
+
+  return (values, context, options) => {
+    const key = JSON.stringify(controllerIds.map((id) => values[id] ?? null));
+    if (!cachedResolver || key !== cachedKey) {
+      cachedResolver = zodResolver(buildZodSchema(fields, values)) as Resolver<
+        Record<string, unknown>
+      >;
+      cachedKey = key;
+    }
+    return cachedResolver(values, context, options);
+  };
 }
 
 /** Build default form values from schema fields. */
