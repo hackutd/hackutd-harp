@@ -81,6 +81,9 @@ type Storage struct {
 		SetRSVPEnabled(ctx context.Context, enabled bool) error
 		GetTravelRSVPSchema(ctx context.Context) ([]ApplicationSchemaField, error)
 		UpdateTravelRSVPSchema(ctx context.Context, fields []ApplicationSchemaField) error
+		// RestoreDefaultFormSchema overwrites one of the editable form
+		// schemas with the default HARP ships with.
+		RestoreDefaultFormSchema(ctx context.Context, key string) error
 		GetTravelRSVPEnabled(ctx context.Context) (bool, error)
 		SetTravelRSVPEnabled(ctx context.Context, enabled bool) error
 		GetReviewsPerApplication(ctx context.Context) (int, error)
@@ -124,6 +127,8 @@ type Storage struct {
 		SetAdminSponsorEditEnabled(ctx context.Context, enabled bool) error
 		GetAdminFAQEditEnabled(ctx context.Context) (bool, error)
 		SetAdminFAQEditEnabled(ctx context.Context, enabled bool) error
+		GetAdminTrackEditEnabled(ctx context.Context) (bool, error)
+		SetAdminTrackEditEnabled(ctx context.Context, enabled bool) error
 	}
 	Hackathon interface {
 		Reset(ctx context.Context, opts ResetOptions) (*ResetPaths, error)
@@ -166,6 +171,14 @@ type Storage struct {
 		Create(ctx context.Context, faq *FAQ) error
 		Update(ctx context.Context, faq *FAQ) error
 		Delete(ctx context.Context, id string) error
+	}
+	Tracks interface {
+		List(ctx context.Context) ([]Track, error)
+		GetByID(ctx context.Context, id string) (*Track, error)
+		Create(ctx context.Context, track *Track) error
+		Update(ctx context.Context, track *Track) error
+		Delete(ctx context.Context, id string) error
+		UpdateLogo(ctx context.Context, id string, logoData string, logoContentType string) error
 	}
 	HackerLinks interface {
 		List(ctx context.Context) ([]HackerLink, error)
@@ -211,6 +224,7 @@ func NewStorage(db *sql.DB) Storage {
 		Schedule:               &ScheduleStore{db: db},
 		Sponsors:               &SponsorsStore{db: db},
 		FAQs:                   &FAQsStore{db: db},
+		Tracks:                 &TracksStore{db: db},
 		HackerLinks:            &HackerLinksStore{db: db},
 		PushSubscriptions:      &PushSubscriptionsStore{db: db},
 		ScheduledNotifications: &ScheduledNotificationsStore{db: db},
