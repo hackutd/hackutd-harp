@@ -615,7 +615,7 @@ function SchemaSelect({
               !value && "text-[#8A8A8A]",
             )}
           >
-            <span className={cn("truncate", !value && "text-sm")}>
+            <span className={cn("min-w-0 truncate", !value && "text-sm")}>
               {value || `Select ${field.label.toLowerCase()}`}
             </span>
             <ChevronDown
@@ -645,7 +645,7 @@ function SchemaSelect({
                 setOpen(false);
               }}
             >
-              <span className="truncate">{opt}</span>
+              <span className="min-w-0 truncate">{opt}</span>
               {opt === value && <Check className="size-4 shrink-0" />}
             </button>
           ))}
@@ -743,7 +743,7 @@ function SchemaCombobox({
               !value && "text-[#8A8A8A]",
             )}
           >
-            <span className={cn("truncate", !value && "text-sm")}>
+            <span className={cn("min-w-0 truncate", !value && "text-sm")}>
               {value || `Select ${field.label.toLowerCase()}`}
             </span>
             <ChevronDown
@@ -805,7 +805,7 @@ function SchemaCombobox({
             !value && "text-[#8A8A8A]",
           )}
         >
-          <span className={cn("truncate", !value && "text-sm")}>
+          <span className={cn("min-w-0 truncate", !value && "text-sm")}>
             {value || `Select ${field.label.toLowerCase()}`}
           </span>
           <ChevronDown
@@ -903,7 +903,7 @@ function ComboboxContent({
               onSelect={() => handleSelect(opt)}
               className="cursor-pointer justify-between rounded-none border-b border-white/10 px-5 py-3.5 text-sm font-light text-white/90 data-[selected=true]:bg-white/10 data-[selected=true]:text-white"
             >
-              <span className="truncate">{opt}</span>
+              <span className="min-w-0 truncate">{opt}</span>
               {opt === value && (
                 <Check className="size-4 shrink-0 text-[#21FFF0]" />
               )}
