@@ -774,6 +774,10 @@ body.hacker-zero-portals {
 }
 
 .zero-hacker-surface {
+  /* The hacker portal is phone-first: a long application question or a long
+     URL answer must wrap, never turn the page into a sideways scroller. clip
+     (not hidden) keeps sticky positioning working inside the page. */
+  overflow-x: clip;
   background-color: #030409;
   background-image:
     radial-gradient(circle at 88% 4%, rgb(246 43 232 / 8%), transparent 24%),

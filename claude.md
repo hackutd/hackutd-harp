@@ -14,6 +14,12 @@ The public marketing site lives in a **separate repository** (`hackutd/harp-mark
 
 Local dev ports: backend `8080`, portal `3000`. Port 3000 is pinned for the portal by `FRONTEND_URL` and the SuperTokens `WebsiteDomain`, so the marketing site takes 3001 when run alongside.
 
+## Working Style
+
+- **Fix the code, don't build a test rig.** Diagnose from the source, make the change, and hand it back. The maintainer runs the app and verifies visually themselves.
+- Do not scaffold throwaway harness pages, mock-API entry points, or browser-automation scripts inside this repo to prove a UI change works.
+- Existing checks are enough: `task test` for Go, `npm run build` / `npm run lint` for the portal.
+
 ## Commands
 
 ### Backend (Go)
