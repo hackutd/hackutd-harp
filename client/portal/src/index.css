@@ -375,36 +375,6 @@
   will-change: transform;
 }
 
-/* A separate, sparse one-way sprint used across the hacker portal. The jaguar
-   remains off-screen for most of the cycle, then crosses quickly enough to
-   feel like an occasional sighting instead of permanent page furniture. */
-@keyframes hacker-jaguar-run {
-  0%,
-  72% {
-    opacity: 0;
-    transform: translate3d(-180px, 0, 0) scaleX(-1);
-  }
-  73% {
-    opacity: 1;
-    transform: translate3d(-180px, 0, 0) scaleX(-1);
-  }
-  91% {
-    opacity: 1;
-    transform: translate3d(calc(100vw + 180px), 0, 0) scaleX(-1);
-  }
-  91.01%,
-  100% {
-    opacity: 0;
-    transform: translate3d(calc(100vw + 180px), 0, 0) scaleX(-1);
-  }
-}
-
-.hacker-jaguar-run {
-  animation: hacker-jaguar-run var(--jaguar-duration, 43s) linear
-    var(--jaguar-delay, 0s) infinite;
-  will-change: transform, opacity;
-}
-
 /* Wandering: waypoints inside a --roam-x by --roam-y box rather than a straight
    there-and-back, so the path never reads as a pendulum. The box hangs off the
    mascot's anchor corner, so the signs of the two vars are what aim it at open
@@ -1056,15 +1026,5 @@ body.hacker-zero-portals
 @media (prefers-reduced-motion: reduce) {
   .zero-login-hand {
     animation: none;
-  }
-
-  :is(.hacker-route-mascot, .hacker-jaguar-lane) {
-    display: none;
-  }
-}
-
-@media (max-height: 560px) {
-  :is(.hacker-route-mascot, .hacker-jaguar-lane) {
-    display: none;
   }
 }
