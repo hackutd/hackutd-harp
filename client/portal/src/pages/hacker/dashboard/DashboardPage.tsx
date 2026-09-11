@@ -388,7 +388,7 @@ export default function DashboardPage() {
               key={n.title}
               className="flex items-center gap-3 rounded-lg border border-white/10 bg-[#0B0C15]/80 px-4 py-3.5"
             >
-              <span className="size-2 shrink-0 rounded-full bg-[#21FFF0] shadow-[0_0_9px_rgba(33,255,240,0.75)]" />
+              <span className="size-2 shrink-0 rounded-full bg-[#5900FF]" />
               <div>
                 <p className="text-sm font-normal text-white">{n.title}</p>
                 <p className="mt-0.5 text-xs font-light text-white/45">
