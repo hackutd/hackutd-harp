@@ -35,6 +35,7 @@ import { formatApplicantLabel, maskEmail } from "@/shared/lib/redaction";
 
 import { fetchReviewNotes as apiFetchReviewNotes } from "./api";
 import { ApplicationDetailsPanel } from "./components/ApplicationDetailsPanel";
+import { CompletedReviewEditor } from "./components/CompletedReviewEditor";
 import { ReviewsTable } from "./components/ReviewsTable";
 import { ReviewsTabToggle } from "./components/ReviewsTabToggle";
 import { VoteBadge } from "./components/VoteBadge";
@@ -45,12 +46,23 @@ import type { ReviewNote } from "./types";
 
 export default function ReviewsPage() {
   const navigate = useNavigate();
-  const { tab, reviews, loading, error, setTab, fetchReviews } =
-    useReviewsStore();
+  const {
+    tab,
+    reviews,
+    loading,
+    error,
+    submitting,
+    setTab,
+    fetchReviews,
+    updateVote,
+  } = useReviewsStore();
   const refreshKey = refreshAssignedPage((state) => state.refreshKey);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
+  // True while the completed-tab editor has unsaved changes open; blocks
+  // moving to another applicant so a stray arrow key can't discard them.
+  const [editingVote, setEditingVote] = useState(false);
   const redact = useRedactApplicants();
 
   const filteredReviews = (() => {
@@ -75,21 +87,23 @@ export default function ReviewsPage() {
   const selectedApplicationId = selectedReview?.application_id ?? null;
 
   const selectedIndex = filteredReviews.findIndex((r) => r.id === selectedId);
-  const canPrevious = selectedIndex > 0;
+  const canPrevious = selectedIndex > 0 && !editingVote;
   const canNext =
-    selectedIndex !== -1 && selectedIndex < filteredReviews.length - 1;
+    selectedIndex !== -1 &&
+    selectedIndex < filteredReviews.length - 1 &&
+    !editingVote;
 
   const handlePreviousReview = useCallback(() => {
-    if (selectedIndex > 0) {
+    if (canPrevious) {
       setSelectedId(filteredReviews[selectedIndex - 1].id);
     }
-  }, [filteredReviews, selectedIndex]);
+  }, [canPrevious, filteredReviews, selectedIndex]);
 
   const handleNextReview = useCallback(() => {
-    if (selectedIndex !== -1 && selectedIndex < filteredReviews.length - 1) {
+    if (canNext) {
       setSelectedId(filteredReviews[selectedIndex + 1].id);
     }
-  }, [filteredReviews, selectedIndex]);
+  }, [canNext, filteredReviews, selectedIndex]);
 
   // --- Assigned tab detail (via existing hook) ---
   const assignedApplicationId =
@@ -123,6 +137,7 @@ export default function ReviewsPage() {
   // Clear selection on tab switch
   const clearSelection = useCallback(() => {
     setSelectedId(null);
+    setEditingVote(false);
     clearAssignedDetail();
     setCompletedAppDetail(null);
     setCompletedDetailLoading(false);
@@ -178,7 +193,7 @@ export default function ReviewsPage() {
   }, [reviews]);
 
   useEffect(() => {
-    if (tab !== "completed") return;
+    if (tab !== "completed" || editingVote) return;
 
     function handleKeyDown(e: KeyboardEvent) {
       if (
@@ -212,7 +227,7 @@ export default function ReviewsPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tab, selectedId]);
+  }, [tab, selectedId, editingVote]);
 
   // --- Descriptions ---
   const description = error ? (
@@ -358,6 +373,19 @@ export default function ReviewsPage() {
                 completedAppDetail &&
                 selectedReview && (
                   <>
+                    <div className="mb-6">
+                      <CompletedReviewEditor
+                        key={selectedReview.id}
+                        review={selectedReview}
+                        applicationStatus={completedAppDetail.status}
+                        submitting={submitting}
+                        onSave={(payload) =>
+                          updateVote(selectedReview.id, payload)
+                        }
+                        onEditingChange={setEditingVote}
+                      />
+                    </div>
+
                     <ApplicationDetailsPanel
                       application={completedAppDetail}
                       selectedReview={selectedReview}

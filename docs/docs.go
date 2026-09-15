@@ -1228,7 +1228,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Records the admin's vote (accept/reject/waitlist) on an assigned application review. A travel_vote (yes/no) is required when the applicant requested travel reimbursement and must be omitted otherwise.",
+                "description": "Records the admin's vote (accept/reject/waitlist) on an assigned application review. A travel_vote (yes/no) is required when the applicant requested travel reimbursement and must be omitted otherwise. Calling this again on a review that already has a vote replaces the vote, travel_vote, and notes, and resets reviewed_at.",
                 "consumes": [
                     "application/json"
                 ],

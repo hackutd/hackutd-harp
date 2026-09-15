@@ -5,6 +5,8 @@ import type { ApiResponse } from "@/types";
 
 import type {
   NotesListResponse,
+  ReviewRecord,
+  ReviewResponse,
   ReviewsListResponse,
   SubmitVotePayload,
 } from "./types";
@@ -36,16 +38,21 @@ export async function fetchCompletedReviews(
 }
 
 /**
- * Submit a vote for a review
+ * Submit a vote for a review. Calling this on an already-voted review
+ * replaces the vote, travel vote, and notes.
  */
 export async function submitReviewVote(
   reviewId: string,
   payload: SubmitVotePayload,
-): Promise<{ success: boolean; error?: string }> {
-  const res = await putRequest(`/admin/reviews/${reviewId}`, payload, "vote");
+): Promise<{ success: boolean; review?: ReviewRecord; error?: string }> {
+  const res = await putRequest<ReviewResponse>(
+    `/admin/reviews/${reviewId}`,
+    payload,
+    "vote",
+  );
 
   if (res.status === 200) {
-    return { success: true };
+    return { success: true, review: res.data?.review };
   } else {
     return { success: false, error: res.error || "Failed to submit vote" };
   }

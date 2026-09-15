@@ -27,6 +27,25 @@ export interface Review {
   travel_status: TravelStatus;
 }
 
+/** The bare review row returned by PUT /admin/reviews/{id} (no applicant details). */
+export type ReviewRecord = Pick<
+  Review,
+  | "id"
+  | "admin_id"
+  | "application_id"
+  | "vote"
+  | "travel_vote"
+  | "notes"
+  | "assigned_at"
+  | "reviewed_at"
+  | "created_at"
+  | "updated_at"
+>;
+
+export interface ReviewResponse {
+  review: ReviewRecord;
+}
+
 export interface ReviewNote {
   admin_id: string;
   admin_email: string;

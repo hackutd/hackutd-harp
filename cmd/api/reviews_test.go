@@ -217,6 +217,52 @@ func TestSubmitVote(t *testing.T) {
 		mockReviews.AssertExpectations(t)
 	})
 
+	t.Run("should replace an existing vote", func(t *testing.T) {
+		admin := newAdminUser()
+		travelNo := false
+		notes := "Changed my mind after re-reading"
+		reviewedAt := time.Now()
+		vote := store.ReviewVoteWaitlist
+		review := &store.ApplicationReview{
+			ID:            "rev-1",
+			ApplicationID: "app-1",
+			AdminID:       admin.ID,
+			Vote:          &vote,
+			TravelVote:    &travelNo,
+			Notes:         &notes,
+			ReviewedAt:    &reviewedAt,
+		}
+
+		mockReviews.On("SubmitVote", "rev-1", admin.ID, store.ReviewVoteWaitlist, &travelNo, &notes).Return(review, nil).Once()
+
+		body := `{"vote":"waitlist","travel_vote":false,"notes":"Changed my mind after re-reading"}`
+		req, err := http.NewRequest(http.MethodPut, "/", strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req = setUserContext(req, admin)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("reviewID", "rev-1")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := executeRequest(req, http.HandlerFunc(app.submitVote))
+		checkResponseCode(t, http.StatusOK, rr.Code)
+
+		var resp struct {
+			Data ReviewResponse `json:"data"`
+		}
+		err = json.NewDecoder(rr.Body).Decode(&resp)
+		require.NoError(t, err)
+		require.NotNil(t, resp.Data.Review.Vote)
+		assert.Equal(t, store.ReviewVoteWaitlist, *resp.Data.Review.Vote)
+		require.NotNil(t, resp.Data.Review.TravelVote)
+		assert.False(t, *resp.Data.Review.TravelVote)
+		require.NotNil(t, resp.Data.Review.Notes)
+		assert.Equal(t, notes, *resp.Data.Review.Notes)
+		assert.NotNil(t, resp.Data.Review.ReviewedAt)
+
+		mockReviews.AssertExpectations(t)
+	})
+
 	t.Run("should return 400 when travel vote missing but applicant requested travel", func(t *testing.T) {
 		admin := newAdminUser()
 
