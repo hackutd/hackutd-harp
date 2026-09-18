@@ -30,9 +30,20 @@ const REDACTED_FIELD_IDS: ReadonlySet<string> = new Set([
   "website",
 ]);
 
+/**
+ * Label fallback for fields created in the schema editor, which get opaque
+ * ids (`field_<timestamp>`) that can't be listed above. Deliberately narrow
+ * — "Preferred Name", "Nickname" — so "Team Name" or "Name of your
+ * university" stay visible.
+ */
+const REDACTED_LABEL_PATTERN =
+  /\b(?:preferred|first|last|full|legal|chosen|display)\s+name\b|\bnickname\b/i;
+
 /** Whether a schema field is hidden from admins. */
-export function isRedactedField(fieldId: string): boolean {
-  return REDACTED_FIELD_IDS.has(fieldId);
+export function isRedactedField(field: { id: string; label: string }): boolean {
+  return (
+    REDACTED_FIELD_IDS.has(field.id) || REDACTED_LABEL_PATTERN.test(field.label)
+  );
 }
 
 /**
