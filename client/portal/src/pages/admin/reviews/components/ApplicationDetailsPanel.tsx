@@ -3,6 +3,7 @@ import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ResumePreviewDialog } from "@/pages/admin/_shared/ResumePreviewDialog";
+import { useRedactApplicants } from "@/shared/hooks";
 import type { Application } from "@/types";
 
 import { SchemaDetailRenderer } from "../../all-applicants/components/detail-sections/SchemaDetailRenderer";
@@ -19,6 +20,7 @@ export function ApplicationDetailsPanel({
   selectedReview,
   isExpanded,
 }: ApplicationDetailsPanelProps) {
+  const redact = useRedactApplicants();
   const gridCols = isExpanded ? "grid-cols-4" : "grid-cols-2";
 
   return (
@@ -27,7 +29,7 @@ export function ApplicationDetailsPanel({
       <SchemaDetailRenderer application={application} />
 
       {/* Resume link */}
-      {application.resume_path && (
+      {!redact && application.resume_path && (
         <div>
           <h4 className="text-sm font-semibold mb-2">Resume</h4>
           <div className="text-sm">

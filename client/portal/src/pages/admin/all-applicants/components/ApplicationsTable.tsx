@@ -75,6 +75,7 @@ export const ApplicationsTable = memo(function ApplicationsTable({
                 ? formatApplicantLabel(app.id)
                 : formatName(app.first_name, app.last_name, app.email);
               const email = redact ? maskEmail(app.email) : app.email;
+              const phone = redact ? "•••" : (app.phone ?? "-");
 
               const isSelected = selectedId === app.id;
 
@@ -104,8 +105,8 @@ export const ApplicationsTable = memo(function ApplicationsTable({
                   </TableCell>
                   <TableCell title={name}>{name}</TableCell>
                   <TableCell title={email}>{email}</TableCell>
-                  <TableCell title={app.phone ?? undefined}>
-                    {app.phone ?? "-"}
+                  <TableCell title={redact ? undefined : phone}>
+                    {phone}
                   </TableCell>
                   <TableCell>{app.age ?? "-"}</TableCell>
                   <TableCell title={app.country_of_residence ?? undefined}>
