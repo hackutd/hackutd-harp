@@ -207,6 +207,32 @@ func TestIntegrationBatchAssign(t *testing.T) {
 			t.Errorf("expected new assignments to go to reviewer with lower workload")
 		}
 	})
+	t.Run("equal_workload_reviewers_do_not_share_queues", func(t *testing.T) {
+		// 30 reviewers at target 3 divide evenly, which is where deterministic
+		// tie-breaking locks reviewers into fixed triples with identical queues.
+		db, s, _, _ := batchTestSeed(t, 30, 300)
+		if n := batchTestBatch(t, s, 3); n != 900 {
+			t.Fatalf("created=%d, want 900", n)
+		}
+		if n := batchTestCount(t, db, `SELECT max(c) - min(c) FROM (
+			SELECT count(*) c FROM application_reviews GROUP BY admin_id) x`); n > 1 {
+			t.Errorf("workload spread=%d, want at most 1", n)
+		}
+		var a, b string
+		var shared int
+		err := db.QueryRow(`
+			SELECT x.admin_id, y.admin_id, count(*) FROM application_reviews x
+			JOIN application_reviews y ON y.application_id = x.application_id AND y.admin_id > x.admin_id
+			GROUP BY x.admin_id, y.admin_id ORDER BY count(*) DESC LIMIT 1`).Scan(&a, &b, &shared)
+		if err != nil {
+			t.Fatal(err)
+		}
+		perAdmin := batchTestCount(t, db, "SELECT count(*) FROM application_reviews WHERE admin_id=$1", a)
+		t.Logf("most overlapping pair %s/%s shares %d of %d applications", a, b, shared, perAdmin)
+		if shared*2 > perAdmin {
+			t.Errorf("reviewers share %d of %d applications; want under half", shared, perAdmin)
+		}
+	})
 	t.Run("self_review_and_insufficient_capacity", func(t *testing.T) {
 		db, s, admins, apps := batchTestSeed(t, 2, 1)
 		batchTestExec(t, db, "UPDATE applications SET user_id=$1 WHERE id=$2", admins[0], apps[0])

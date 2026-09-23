@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"math/rand/v2"
 	"time"
 )
 
@@ -157,7 +158,7 @@ func (s *ApplicationReviewsStore) GetPendingByAdminID(ctx context.Context, admin
 		JOIN applications a ON ar.application_id = a.id
 		JOIN users u ON a.user_id = u.id
 		WHERE ar.admin_id = $1 AND ar.vote IS NULL AND a.status = 'submitted'
-		ORDER BY ar.assigned_at ASC
+		ORDER BY ar.assigned_at ASC, ar.id
 	`
 
 	rows, err := s.db.QueryContext(ctx, query, adminID)
@@ -299,6 +300,9 @@ type BatchAssignmentResult struct {
 // BatchAssign recovers pending reviews that can no longer be acted on (reviewer
 // disabled or demoted, application already decided) and fills submitted
 // applications' assignment targets with distinct, currently eligible reviewers.
+// Each slot goes to the least-loaded reviewer; ties are broken at random so
+// reviewers with equal workloads do not lock into fixed groups that share
+// identical queues.
 // The assignment toggle only applies to super admins; entries for users who
 // no longer hold that role are dropped so a demoted user is a regular admin.
 func (s *ApplicationReviewsStore) BatchAssign(ctx context.Context, reviewsPerApp int) (*BatchAssignmentResult, error) {
@@ -360,7 +364,7 @@ func (s *ApplicationReviewsStore) BatchAssign(ctx context.Context, reviewsPerApp
 	}
 	result.ReviewsRemoved = int(n)
 
-	// Read workloads after cleanup. Creation time and ID provide stable ties.
+	// Read workloads after cleanup.
 	adminRows, err := tx.QueryContext(ctx, `
 		SELECT u.id, u.role, COUNT(ar.id),
 			NOT (u.role = 'super_admin' AND u.id::text = ANY($1::text[]))
@@ -368,7 +372,6 @@ func (s *ApplicationReviewsStore) BatchAssign(ctx context.Context, reviewsPerApp
 		LEFT JOIN application_reviews ar ON ar.admin_id = u.id AND ar.vote IS NULL
 		WHERE u.role IN ('admin', 'super_admin')
 		GROUP BY u.id
-		ORDER BY u.created_at, u.id
 	`, disabledIDs)
 	if err != nil {
 		return nil, err
@@ -478,24 +481,28 @@ func (s *ApplicationReviewsStore) BatchAssign(ctx context.Context, reviewsPerApp
 	}
 
 	var pairAppIDs, pairAdminIDs []string
+	candidates := make([]int, 0, len(admins))
 	for _, app := range apps {
 		if pairs[app.ID] == nil {
 			pairs[app.ID] = make(map[string]bool)
 		}
 		for range reviewsPerApp - app.Assigned {
-			best := -1
+			candidates = candidates[:0]
 			for i, admin := range admins {
 				if admin.ID == app.UserID || pairs[app.ID][admin.ID] {
 					continue
 				}
-				if best == -1 || admin.Pending < admins[best].Pending {
-					best = i
+				switch {
+				case len(candidates) == 0 || admin.Pending < admins[candidates[0]].Pending:
+					candidates = append(candidates[:0], i)
+				case admin.Pending == admins[candidates[0]].Pending:
+					candidates = append(candidates, i)
 				}
 			}
-			if best == -1 {
+			if len(candidates) == 0 {
 				break
 			}
-			admin := &admins[best]
+			admin := &admins[candidates[rand.IntN(len(candidates))]]
 			pairs[app.ID][admin.ID] = true
 			admin.Pending++
 			pairAppIDs = append(pairAppIDs, app.ID)
