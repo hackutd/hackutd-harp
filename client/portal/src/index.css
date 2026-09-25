@@ -5,9 +5,28 @@
    restyle the portal without conflicting with upstream on every merge. */
 @import "../branding/theme.css";
 
+/* Zero Day type, from the marketing site: Satoshi for text, Hypik for display.
+   Hypik is letters only - no digits or punctuation - and its licence asks for
+   a link back (assets/fonts/hypik-LICENSE.txt). */
+@font-face {
+  font-family: "Satoshi";
+  src: url("./assets/fonts/Satoshi-Variable.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Hypik";
+  src: url("./assets/fonts/hypik.otf") format("opentype");
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-satoshi: "Satoshi", ui-sans-serif, system-ui, sans-serif;
+  --font-hypik: "Hypik", "Satoshi", ui-sans-serif, sans-serif;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -635,18 +654,6 @@
   opacity: 0.4;
 }
 
-.zero-login-title {
-  filter: drop-shadow(10px 0 18px rgb(246 43 232 / 14%))
-    drop-shadow(-8px 0 18px rgb(33 255 240 / 10%));
-}
-
-.zero-login-hand {
-  filter: drop-shadow(18px 0 30px rgb(246 43 232 / 18%))
-    drop-shadow(-16px 0 30px rgb(33 255 240 / 16%));
-  animation: zero-hand-drift 10s ease-in-out infinite;
-  will-change: transform;
-}
-
 .zero-login-panel {
   background: linear-gradient(
     135deg,
@@ -696,8 +703,7 @@
   );
 }
 
-.zero-cut-sm,
-.zero-login-input {
+.zero-cut-sm {
   border-radius: 0;
   clip-path: polygon(
     0 0,
@@ -750,31 +756,6 @@
 .zero-login-legal-link:hover::after,
 .zero-login-legal-link:focus-visible::after {
   transform: scaleX(1);
-}
-
-.zero-harp-link {
-  transition:
-    filter 240ms ease,
-    transform 240ms ease;
-}
-
-.zero-harp-link span,
-.zero-harp-link svg {
-  transition: color 240ms ease;
-}
-
-.zero-harp-link:hover,
-.zero-harp-link:focus-visible {
-  filter: drop-shadow(0 0 8px rgb(33 255 240 / 55%));
-  outline: none;
-  transform: translateX(2px);
-}
-
-.zero-harp-link:hover span,
-.zero-harp-link:focus-visible span,
-.zero-harp-link:hover svg,
-.zero-harp-link:focus-visible svg {
-  color: #21fff0;
 }
 
 /* Zero Day hacker portal. The theme class lives at the shared hacker layout,
@@ -1053,16 +1034,6 @@ body.hacker-zero-portals
   }
 }
 
-@keyframes zero-hand-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(-1deg);
-  }
-  50% {
-    transform: translate3d(-8px, -10px, 0) rotate(1deg);
-  }
-}
-
 @media (max-width: 639px) {
   .zero-login {
     background-image:
@@ -1076,18 +1047,216 @@ body.hacker-zero-portals
   }
 }
 
-/* Below `lg` the sign-in screen is one screenful: the title pins to the top and
-   the access panel takes whatever height is left, with the mascot hand sitting
-   behind it. On a short viewport (a small phone, or one in landscape) the
-   supporting line steps aside rather than pushing the form off-screen. */
-@media (max-width: 1023px) and (max-height: 720px) {
-  .zero-login-blurb {
-    display: none;
+/* ---------------------------------------------------------------------------
+ * Login card border
+ *
+ * A conic gradient turns slowly behind the card: `::before` is the 1px rim,
+ * clipped to the card's notch (`--notch`), and `::after` is the same gradient
+ * blurred into a soft glow, left unclipped so it can bleed past the corners.
+ * The card sits on top and must be opaque, or the rim's fill shows through.
+ * `@property` lets the angle itself animate, so only the light moves.
+ * ------------------------------------------------------------------------ */
+
+@property --login-angle {
+  syntax: "<angle>";
+  initial-value: 200deg;
+  inherits: false;
+}
+
+@keyframes login-border-turn {
+  to {
+    --login-angle: 560deg;
+  }
+}
+
+.login-glow {
+  position: relative;
+  isolation: isolate;
+}
+
+.login-glow::before,
+.login-glow::after {
+  position: absolute;
+  inset: -1px;
+  background: conic-gradient(
+    from var(--login-angle),
+    #7828ff,
+    transparent 22%,
+    transparent 48%,
+    #dbc4ff 58%,
+    transparent 70%,
+    #7828ff
+  );
+  content: "";
+  animation: login-border-turn 12s linear infinite;
+}
+
+.login-glow::before {
+  z-index: -1;
+  clip-path: var(--notch);
+  background-color: rgb(255 255 255 / 8%);
+}
+
+.login-glow::after {
+  z-index: -2;
+  filter: blur(28px);
+  opacity: 0.35;
+}
+
+.login-glow-card {
+  background: #0e011f;
+  clip-path: var(--notch);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-glow::before,
+  .login-glow::after {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Shooting stars, from zeroday.hackutd.co (`.star-field` in its globals.css).
+ *
+ * The same streak and timing: each star's flight is the first fifth of a long
+ * cycle and the rest is empty sky. The site restarts its single star from a
+ * scroll handler; here there is nothing to sync with, so two stars simply loop
+ * half a cycle apart, one in each direction. Two animations compose on the
+ * star, one growing and shrinking the tail and one carrying it across; the
+ * field's tilt angles the path.
+ * ------------------------------------------------------------------------ */
+
+.star-field {
+  --star-cycle: 14s;
+  position: absolute;
+  inset: -20% -15%;
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+/* A mirrored field: its stars fly right to left, still descending, and the
+   flip keeps the bright head at the leading end. */
+.star-field-reverse {
+  transform: scaleX(-1) rotate(8deg);
+}
+
+.shooting-star {
+  position: absolute;
+  top: var(--star-top, 26%);
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  /* Bright at the right-hand end, because that end leads. */
+  background: linear-gradient(
+    90deg,
+    rgba(219, 196, 255, 0) 0%,
+    rgba(219, 196, 255, 0.85) 65%,
+    #ffffff 100%
+  );
+  filter: drop-shadow(0 0 6px rgba(190, 150, 255, 0.95));
+  animation:
+    star-tail var(--star-cycle) ease-in-out infinite,
+    star-shoot var(--star-cycle) ease-in-out infinite;
+  animation-delay: var(--star-delay, 0s);
+}
+
+/* The cross-glint at the head, mirrored to make an X. */
+.shooting-star::before,
+.shooting-star::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 1px);
+  right: 0;
+  height: 2px;
+  border-radius: 100%;
+  background: linear-gradient(
+    -45deg,
+    rgba(219, 196, 255, 0),
+    rgba(233, 220, 255, 1),
+    rgba(219, 196, 255, 0)
+  );
+  animation: star-glint var(--star-cycle) ease-in-out infinite;
+  animation-delay: var(--star-delay, 0s);
+}
+
+.shooting-star::before {
+  transform: translateX(50%) rotateZ(45deg);
+}
+
+.shooting-star::after {
+  transform: translateX(50%) rotateZ(-45deg);
+}
+
+@keyframes star-shoot {
+  0% {
+    transform: translateX(0);
+  }
+  20%,
+  100% {
+    transform: translateX(130vw);
+  }
+}
+
+@keyframes star-tail {
+  0% {
+    width: 0;
+  }
+  4%,
+  17% {
+    width: 180px;
+  }
+  20%,
+  100% {
+    width: 0;
+  }
+}
+
+@keyframes star-glint {
+  0%,
+  20%,
+  100% {
+    width: 0;
+  }
+  5%,
+  16% {
+    width: 30px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zero-login-hand {
-    animation: none;
+  .star-field {
+    display: none;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Cyberpunk cursors, from zeroday.hackutd.co (public/cursors). Scoped to the
+ * pages that opt in with `.zero-cursor`. The hotspots are the ones baked into
+ * the original .cur files - the arrow's tip is 8px down its bitmap, the hand's
+ * at (6,5), the beam's centred at (17,15) - so clicks land where the cursor
+ * points. Each keeps its native keyword as the fallback.
+ * ------------------------------------------------------------------------ */
+
+.zero-cursor {
+  cursor:
+    image-set(
+        url("/cursors/cp-arrow.png") 1x,
+        url("/cursors/cp-arrow@2x.png") 2x
+      )
+      0 8,
+    auto;
+}
+
+.zero-cursor :is(a, button:not(:disabled), summary, label, [role="button"]) {
+  cursor:
+    image-set(url("/cursors/cp-link.png") 1x, url("/cursors/cp-link@2x.png") 2x)
+      6 5,
+    pointer;
+}
+
+.zero-cursor :is(input, textarea, [contenteditable="true"]) {
+  cursor:
+    image-set(url("/cursors/cp-beam.png") 1x, url("/cursors/cp-beam@2x.png") 2x)
+      17 15,
+    text;
 }
