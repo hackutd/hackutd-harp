@@ -76,7 +76,9 @@ export default defineConfig({
       srcDir: "src",
       filename: "sw.ts",
       injectManifest: {
-        globPatterns: ["**/*.{js,css,html,png,svg,ico,webp,woff,woff2}"],
+        // No html/js/css: the shell must always come from the network and
+        // the fingerprinted bundles are runtime-cached by src/sw.ts.
+        globPatterns: ["**/*.{png,svg,ico,webp,woff,woff2}"],
       },
       // Serve the service worker during `vite dev` so push notifications can be
       // tested without a production build. Has no effect on prod builds.
