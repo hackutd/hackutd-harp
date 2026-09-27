@@ -1,7 +1,8 @@
-import { ArrowLeft, Home } from "lucide-react";
+import { ArrowLeft, Home, RefreshCw } from "lucide-react";
 import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import { isChunkLoadError } from "@/shared/lib/stale-chunk-reload";
 
 /**
  * Static rather than the super admin's runtime `contact_email`: this page is
@@ -78,6 +79,9 @@ export function ErrorPage() {
   const error = useRouteError();
   const navigate = useNavigate();
   const { status, label, title, message, detail } = describeError(error);
+  // A missing content-hashed chunk means this tab predates a deploy. Only a
+  // reload fetches the fresh shell; in-app navigation keeps the stale one.
+  const staleBuild = detail != null && isChunkLoadError(detail);
 
   return (
     <main className="zero-login relative isolate flex min-h-svh flex-col overflow-hidden bg-black text-white">
@@ -146,7 +150,19 @@ export function ErrorPage() {
               </div>
             )}
 
-            <div className="mt-6 flex flex-col gap-2.5 sm:mt-7 sm:flex-row">
+            {staleBuild && (
+              <Button
+                className="zero-cut-button mt-6 h-11 w-full bg-[#21FFF0] text-xs font-medium tracking-[0.18em] text-black uppercase shadow-[0_0_20px_rgba(33,255,240,0.28)] hover:bg-[#5cfff4] focus-visible:ring-[#21FFF0]/50 sm:mt-7 sm:h-12"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw aria-hidden className="mr-1.5 size-4" />A new version
+                is available — reload
+              </Button>
+            )}
+
+            <div
+              className={`${staleBuild ? "mt-2.5" : "mt-6 sm:mt-7"} flex flex-col gap-2.5 sm:flex-row`}
+            >
               <Button
                 variant="outline"
                 className="zero-cut-button h-11 w-full border-[#21FFF0]/45 bg-transparent text-xs font-medium tracking-[0.18em] text-white uppercase hover:border-[#21FFF0] hover:bg-[#21FFF0]/10 hover:text-white focus-visible:ring-[#21FFF0]/50 sm:h-12 sm:flex-1"
