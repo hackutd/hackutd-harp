@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +17,7 @@ import (
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/hackutd/harp/internal/store"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -421,6 +424,131 @@ func TestDispatchDueNotifications(t *testing.T) {
 		require.True(t, recorder.released, "claim was not resolved after cancellation")
 		require.NoError(t, recorder.releaseCtxErr, "bookkeeping ran on the cancelled context")
 	})
+}
+
+// TestClaimDueNotifications covers the claim retry: a slow tick (deadline exceeded,
+// dropped connection) gets a couple more tries before it is reported, while a
+// permanent failure is surfaced at once so a real outage still logs every tick.
+func TestClaimDueNotifications(t *testing.T) {
+	anyClaim := []any{mock.Anything, mock.Anything, mock.Anything, mock.Anything}
+
+	shortBackoff := func(t *testing.T) {
+		t.Helper()
+		prev := dispatcherClaimRetryBackoff
+		dispatcherClaimRetryBackoff = time.Millisecond
+		t.Cleanup(func() { dispatcherClaimRetryBackoff = prev })
+	}
+
+	t.Run("retries a deadline-exceeded claim and succeeds on the second attempt", func(t *testing.T) {
+		shortBackoff(t)
+		app := newTestDispatcherApp(t)
+		mockNotifs := app.store.ScheduledNotifications.(*store.MockScheduledNotificationsStore)
+
+		want := []store.ScheduledNotification{claimed("n1", time.Now(), 1)}
+		mockNotifs.On("ClaimDue", anyClaim...).Return(nil, context.DeadlineExceeded).Once()
+		mockNotifs.On("ClaimDue", anyClaim...).Return(want, nil).Once()
+
+		due, err := app.claimDueNotifications(context.Background(), time.Now())
+
+		require.NoError(t, err)
+		assert.Equal(t, want, due)
+		mockNotifs.AssertNumberOfCalls(t, "ClaimDue", 2)
+	})
+
+	t.Run("retries a wrapped deadline error", func(t *testing.T) {
+		shortBackoff(t)
+		app := newTestDispatcherApp(t)
+		mockNotifs := app.store.ScheduledNotifications.(*store.MockScheduledNotificationsStore)
+
+		wrapped := fmt.Errorf("begin tx: %w", context.DeadlineExceeded)
+		mockNotifs.On("ClaimDue", anyClaim...).Return(nil, wrapped).Once()
+		mockNotifs.On("ClaimDue", anyClaim...).Return(nil, nil).Once()
+
+		_, err := app.claimDueNotifications(context.Background(), time.Now())
+
+		require.NoError(t, err)
+		mockNotifs.AssertNumberOfCalls(t, "ClaimDue", 2)
+	})
+
+	t.Run("gives up after the retry budget and returns the last error", func(t *testing.T) {
+		shortBackoff(t)
+		app := newTestDispatcherApp(t)
+		mockNotifs := app.store.ScheduledNotifications.(*store.MockScheduledNotificationsStore)
+
+		mockNotifs.On("ClaimDue", anyClaim...).Return(nil, context.DeadlineExceeded)
+
+		_, err := app.claimDueNotifications(context.Background(), time.Now())
+
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		mockNotifs.AssertNumberOfCalls(t, "ClaimDue", 1+dispatcherClaimRetries)
+	})
+
+	t.Run("does not retry a permanent error", func(t *testing.T) {
+		shortBackoff(t)
+		app := newTestDispatcherApp(t)
+		mockNotifs := app.store.ScheduledNotifications.(*store.MockScheduledNotificationsStore)
+
+		permanent := &pgconn.PgError{Code: "42P01", Message: "relation does not exist"}
+		mockNotifs.On("ClaimDue", anyClaim...).Return(nil, permanent).Once()
+
+		_, err := app.claimDueNotifications(context.Background(), time.Now())
+
+		require.ErrorIs(t, err, permanent)
+		mockNotifs.AssertNumberOfCalls(t, "ClaimDue", 1)
+	})
+
+	t.Run("does not retry an opaque error", func(t *testing.T) {
+		shortBackoff(t)
+		app := newTestDispatcherApp(t)
+		mockNotifs := app.store.ScheduledNotifications.(*store.MockScheduledNotificationsStore)
+
+		mockNotifs.On("ClaimDue", anyClaim...).Return(nil, errors.New("db down")).Once()
+
+		_, err := app.claimDueNotifications(context.Background(), time.Now())
+
+		require.Error(t, err)
+		mockNotifs.AssertNumberOfCalls(t, "ClaimDue", 1)
+	})
+
+	t.Run("does not retry once the dispatcher context is cancelled", func(t *testing.T) {
+		shortBackoff(t)
+		app := newTestDispatcherApp(t)
+		mockNotifs := app.store.ScheduledNotifications.(*store.MockScheduledNotificationsStore)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		mockNotifs.On("ClaimDue", anyClaim...).Run(func(mock.Arguments) { cancel() }).
+			Return(nil, context.DeadlineExceeded).Once()
+
+		_, err := app.claimDueNotifications(ctx, time.Now())
+
+		require.Error(t, err)
+		mockNotifs.AssertNumberOfCalls(t, "ClaimDue", 1)
+	})
+}
+
+func TestIsTransientClaimError(t *testing.T) {
+	transient := []error{
+		context.DeadlineExceeded,
+		fmt.Errorf("query: %w", context.DeadlineExceeded),
+		&net.OpError{Op: "dial", Err: errors.New("connection refused")},
+		&pgconn.PgError{Code: "40001"},
+		&pgconn.PgError{Code: "40P01"},
+		&pgconn.PgError{Code: "57P01"},
+		&pgconn.PgError{Code: "08006"},
+	}
+	for _, err := range transient {
+		assert.True(t, isTransientClaimError(err), "%v should be transient", err)
+	}
+
+	permanent := []error{
+		errors.New("db down"),
+		context.Canceled,
+		&pgconn.PgError{Code: "42P01"},
+		&pgconn.PgError{Code: "23505"},
+	}
+	for _, err := range permanent {
+		assert.False(t, isTransientClaimError(err), "%v should be permanent", err)
+	}
 }
 
 // TestDispatchBatch covers the batch deadline. ClaimDue charges every claimed row

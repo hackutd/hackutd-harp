@@ -226,7 +226,7 @@ func (s *ScheduledNotificationsStore) Delete(ctx context.Context, id string) err
 // again once lease elapses, instead of dropping the notification forever. Rows that
 // have burned maxAttempts are left for MarkFailed rather than retried indefinitely.
 func (s *ScheduledNotificationsStore) ClaimDue(ctx context.Context, now time.Time, lease time.Duration, maxAttempts, limit int) ([]ScheduledNotification, error) {
-	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	ctx, cancel := context.WithTimeout(ctx, ClaimTimeoutDuration)
 	defer cancel()
 
 	tx, err := s.db.BeginTx(ctx, nil)

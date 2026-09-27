@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/hackutd/harp/internal/store"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const (
@@ -36,7 +38,16 @@ const (
 	// dispatcherLeaseSafetyMargin is the slack left at the end of a lease for the
 	// bookkeeping write that resolves the claim.
 	dispatcherLeaseSafetyMargin = 15 * time.Second
+	// dispatcherClaimRetries is how many extra ClaimDue attempts a tick gets when the
+	// claim fails transiently. On Cloud Run a cold instance or an idle pool can push
+	// the first claim past its deadline; one or two retries absorb that without
+	// masking a real outage, which still logs once per tick.
+	dispatcherClaimRetries = 2
 )
+
+// dispatcherClaimRetryBackoff is the pause between claim attempts. A var so tests
+// can shorten it.
+var dispatcherClaimRetryBackoff = 2 * time.Second
 
 // errDeliveryPermanent marks a failure that retrying cannot fix, so the dispatcher
 // gives up immediately instead of burning every attempt on it.
@@ -62,7 +73,7 @@ func (app *application) runNotificationDispatcher(ctx context.Context) {
 
 	// Sweep once on startup so a fresh instance picks up work abandoned by the
 	// instance it replaced, rather than waiting out a full tick first.
-	app.dispatchDueNotifications(ctx)
+	app.dispatchDueNotificationsAt(ctx, true)
 
 	for {
 		select {
@@ -76,12 +87,24 @@ func (app *application) runNotificationDispatcher(ctx context.Context) {
 }
 
 func (app *application) dispatchDueNotifications(ctx context.Context) {
+	app.dispatchDueNotificationsAt(ctx, false)
+}
+
+// dispatchDueNotificationsAt runs one tick. startup marks the sweep that runs
+// before the first tick, where a slow claim is expected while connections warm and
+// is reported as a warning rather than an error.
+func (app *application) dispatchDueNotificationsAt(ctx context.Context, startup bool) {
 	claimedAt := time.Now()
-	due, err := app.store.ScheduledNotifications.ClaimDue(
-		ctx, claimedAt, dispatcherLease, dispatcherMaxAttempts, dispatcherClaimLimit,
-	)
+	due, err := app.claimDueNotifications(ctx, claimedAt)
 	if err != nil {
-		app.logger.Errorw("failed to claim due notifications", "error", err)
+		if ctx.Err() != nil {
+			return
+		}
+		if startup && errors.Is(err, context.DeadlineExceeded) {
+			app.logger.Warnw("failed to claim due notifications on startup sweep", "error", err)
+		} else {
+			app.logger.Errorw("failed to claim due notifications", "error", err)
+		}
 		return
 	}
 
@@ -102,6 +125,60 @@ func (app *application) dispatchDueNotifications(ctx context.Context) {
 	// The whole batch has to finish inside the lease taken above, or a slow tail
 	// could be claimed by a second instance while this one is still sending.
 	app.dispatchBatch(ctx, due, options, claimedAt.Add(dispatcherLease-dispatcherLeaseSafetyMargin))
+}
+
+// claimDueNotifications calls ClaimDue, retrying transient failures up to
+// dispatcherClaimRetries times. Permanent errors are returned immediately.
+func (app *application) claimDueNotifications(ctx context.Context, claimedAt time.Time) ([]store.ScheduledNotification, error) {
+	var err error
+	for attempt := 0; ; attempt++ {
+		var due []store.ScheduledNotification
+		due, err = app.store.ScheduledNotifications.ClaimDue(
+			ctx, claimedAt, dispatcherLease, dispatcherMaxAttempts, dispatcherClaimLimit,
+		)
+		if err == nil {
+			return due, nil
+		}
+		if ctx.Err() != nil || attempt >= dispatcherClaimRetries || !isTransientClaimError(err) {
+			return nil, err
+		}
+
+		app.logger.Debugw("retrying claim of due notifications", "attempt", attempt+1, "error", err)
+
+		select {
+		case <-ctx.Done():
+			return nil, err
+		case <-time.After(dispatcherClaimRetryBackoff):
+		}
+	}
+}
+
+// isTransientClaimError reports whether a ClaimDue failure is worth retrying within
+// the same tick: the store's own deadline elapsing, a dropped or refused connection,
+// or a Postgres error the driver itself considers safe to retry.
+func isTransientClaimError(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	if pgconn.SafeToRetry(err) || pgconn.Timeout(err) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch {
+		case pgErr.Code == "40001", pgErr.Code == "40P01": // serialization failure, deadlock
+			return true
+		case pgErr.Code == "57P01", pgErr.Code == "57P02", pgErr.Code == "57P03": // admin shutdown, crash, cannot connect now
+			return true
+		case len(pgErr.Code) >= 2 && pgErr.Code[:2] == "08": // connection exception
+			return true
+		}
+	}
+	return false
 }
 
 // dispatchBatch processes claimed notifications in order until batchDeadline.

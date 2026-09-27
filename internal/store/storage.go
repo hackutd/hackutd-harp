@@ -16,6 +16,10 @@ var (
 	ErrConflict           = errors.New("resource already exists")
 	ErrInsufficientPoints = errors.New("insufficient points")
 	QueryTimeoutDuration  = time.Second * 5
+	// ClaimTimeoutDuration bounds lock-taking claim transactions. These open a
+	// transaction and run two statements, and on a cold connection pool the
+	// handshake alone can eat most of a plain query timeout.
+	ClaimTimeoutDuration = QueryTimeoutDuration * 2
 )
 
 // Travel decision conflicts. Each wraps ErrConflict so existing callers that
