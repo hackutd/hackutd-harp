@@ -263,11 +263,35 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Cyberpunk 2077 cursor set, copied from zero-day-2026. Hotspots come from
+     the original .cur headers; 2x copies are nearest-doubled pixel art. Each
+     rule falls back to the native keyword if the image fails. Kept in the base
+     layer so cursor-* utilities (not-allowed, grab, ...) still win. */
   body {
     @apply bg-background text-foreground;
+    cursor:
+      image-set(
+          url("/cursors/cp-arrow.png") 1x,
+          url("/cursors/cp-arrow@2x.png") 2x
+        )
+        0 8,
+      auto;
+  }
+  input,
+  textarea,
+  [contenteditable="true"] {
+    cursor:
+      image-set(
+          url("/cursors/cp-beam.png") 1x,
+          url("/cursors/cp-beam@2x.png") 2x
+        )
+        17 15,
+      text;
   }
   /* Tailwind v4 no longer sets cursor: pointer on buttons; restore it for
      interactive elements so anything clickable shows a pointer cursor. */
+  a[href],
+  label,
   button:not(:disabled),
   [role="button"]:not(:disabled),
   [role="tab"]:not([data-disabled]):not([aria-disabled="true"]),
@@ -278,7 +302,13 @@
   [role="switch"]:not(:disabled),
   select:not(:disabled),
   summary {
-    cursor: pointer;
+    cursor:
+      image-set(
+          url("/cursors/cp-link.png") 1x,
+          url("/cursors/cp-link@2x.png") 2x
+        )
+        6 5,
+      pointer;
   }
 }
 
