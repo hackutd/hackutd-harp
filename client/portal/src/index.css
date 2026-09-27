@@ -263,35 +263,11 @@
   * {
     @apply border-border outline-ring/50;
   }
-  /* Cyberpunk 2077 cursor set, copied from zero-day-2026. Hotspots come from
-     the original .cur headers; 2x copies are nearest-doubled pixel art. Each
-     rule falls back to the native keyword if the image fails. Kept in the base
-     layer so cursor-* utilities (not-allowed, grab, ...) still win. */
   body {
     @apply bg-background text-foreground;
-    cursor:
-      image-set(
-          url("/cursors/cp-arrow.png") 1x,
-          url("/cursors/cp-arrow@2x.png") 2x
-        )
-        0 8,
-      auto;
-  }
-  input,
-  textarea,
-  [contenteditable="true"] {
-    cursor:
-      image-set(
-          url("/cursors/cp-beam.png") 1x,
-          url("/cursors/cp-beam@2x.png") 2x
-        )
-        17 15,
-      text;
   }
   /* Tailwind v4 no longer sets cursor: pointer on buttons; restore it for
      interactive elements so anything clickable shows a pointer cursor. */
-  a[href],
-  label,
   button:not(:disabled),
   [role="button"]:not(:disabled),
   [role="tab"]:not([data-disabled]):not([aria-disabled="true"]),
@@ -302,13 +278,70 @@
   [role="switch"]:not(:disabled),
   select:not(:disabled),
   summary {
-    cursor:
-      image-set(
-          url("/cursors/cp-link.png") 1x,
-          url("/cursors/cp-link@2x.png") 2x
-        )
-        6 5,
-      pointer;
+    cursor: pointer;
+  }
+}
+
+/*
+ * Cyberpunk 2077 cursor set, copied from zero-day-2026. Hotspots come from the
+ * original .cur headers; 2x copies are nearest-doubled pixel art. Each value
+ * falls back to the native keyword if the image fails.
+ *
+ * Hacker and public pages only: AdminLayout puts .admin-portal on <body> (body,
+ * not the layout, so Radix portals are covered too) and keeps native cursors.
+ */
+:root {
+  --cp-arrow:
+    image-set(
+        url("/cursors/cp-arrow.png") 1x,
+        url("/cursors/cp-arrow@2x.png") 2x
+      )
+      0 8,
+    auto;
+  --cp-beam:
+    image-set(url("/cursors/cp-beam.png") 1x, url("/cursors/cp-beam@2x.png") 2x)
+      17 15,
+    text;
+  --cp-hand:
+    image-set(url("/cursors/cp-link.png") 1x, url("/cursors/cp-link@2x.png") 2x)
+      6 5,
+    pointer;
+}
+
+/* Base layer, so cursor-* utilities (not-allowed, grab, ...) still win. */
+@layer base {
+  body:not(.admin-portal) {
+    cursor: var(--cp-arrow);
+  }
+  body:not(.admin-portal) :is(input, textarea, [contenteditable="true"]) {
+    cursor: var(--cp-beam);
+  }
+  body:not(.admin-portal)
+    :is(
+      a[href],
+      label,
+      button:not(:disabled),
+      [role="button"]:not(:disabled),
+      [role="tab"]:not([data-disabled]):not([aria-disabled="true"]),
+      [role="menuitem"]:not([data-disabled]):not([aria-disabled="true"]),
+      [role="menuitemcheckbox"]:not([data-disabled]):not(
+          [aria-disabled="true"]
+        ),
+      [role="menuitemradio"]:not([data-disabled]):not([aria-disabled="true"]),
+      [role="option"]:not([data-disabled]):not([aria-disabled="true"]),
+      [role="switch"]:not(:disabled),
+      select:not(:disabled),
+      summary
+    ) {
+    cursor: var(--cp-hand);
+  }
+}
+
+/* Many components set the cursor-pointer utility explicitly, which beats the
+   base layer and would show the native hand; swap it for the custom one. */
+@layer utilities {
+  body:not(.admin-portal) .cursor-pointer:not(:disabled) {
+    cursor: var(--cp-hand);
   }
 }
 
