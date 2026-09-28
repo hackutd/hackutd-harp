@@ -225,6 +225,33 @@ func googleOverrides(appStore store.Storage) *tpmodels.OverrideStruct {
 
 			return impl
 		},
+		APIs: func(impl tpmodels.APIInterface) tpmodels.APIInterface {
+			origSignInUpPOST := *impl.SignInUpPOST
+
+			// A mismatch is a user mistake, not a server fault. Left as an error it
+			// reaches SuperTokens' default handler and goes out as a plain-text 500;
+			// as a GENERAL_ERROR the client throws it with this message instead.
+			*impl.SignInUpPOST = func(
+				provider *tpmodels.TypeProvider,
+				input tpmodels.TypeSignInUpInput,
+				tenantId string,
+				options tpmodels.APIOptions,
+				userContext supertokens.UserContext,
+			) (tpmodels.SignInUpPOSTResponse, error) {
+				resp, err := origSignInUpPOST(provider, input, tenantId, options, userContext)
+
+				var mismatchErr *AuthMethodMismatchError
+				if errors.As(err, &mismatchErr) {
+					return tpmodels.SignInUpPOSTResponse{
+						GeneralError: &supertokens.GeneralErrorResponse{Message: mismatchErr.UserMessage()},
+					}, nil
+				}
+
+				return resp, err
+			}
+
+			return impl
+		},
 	}
 }
 

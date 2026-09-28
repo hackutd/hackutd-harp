@@ -28,42 +28,10 @@ export default function AuthOAuthCallback() {
           setError("Sign in not allowed. Please contact support.");
         }
       } catch (err) {
-        if (err instanceof Response) {
-          try {
-            const body = await err.json();
-            const message = body?.message || body?.error || "";
-            if (
-              message.toLowerCase().includes("auth method mismatch") ||
-              message.toLowerCase().includes("passwordless") ||
-              message.toLowerCase().includes("magic link")
-            ) {
-              setError(
-                "This email is already registered with magic link sign-in. Please go back and use the email option instead.",
-              );
-              return;
-            }
-          } catch {
-            // JSON parse fail
-          }
-          if (err.status === 500) {
-            setError(
-              "This email may already be registered with a different sign-in method. Please try using the magic link option instead.",
-            );
-            return;
-          }
-        }
-
+        // Sign-in method mismatches arrive as an STGeneralError whose message
+        // is already written for the user; anything else is a real failure.
         const message = err instanceof Error ? err.message : "";
-        if (
-          message.toLowerCase().includes("auth method mismatch") ||
-          message.toLowerCase().includes("passwordless")
-        ) {
-          setError(
-            "This email is already registered with magic link sign-in. Please go back and use the email option instead.",
-          );
-        } else {
-          setError(message || "An error occurred during sign in");
-        }
+        setError(message || "An error occurred during sign in");
       }
     }
 
