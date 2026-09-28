@@ -1,10 +1,17 @@
-import { Download, Share2 } from "lucide-react";
+import { Download, Eye, Share2 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router";
 import { toast } from "sonner";
 
 import { HackerPageLoader } from "@/components/HackerPageLoader";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getRequest } from "@/shared/lib/api";
 import { parseDateOnly } from "@/shared/lib/datetime";
 import { useUserStore } from "@/shared/stores";
@@ -67,7 +74,16 @@ export default function TicketPage() {
   const [config, setConfig] = useState<HackathonConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  // The rendered image, shown before anything is saved or posted.
+  const [preview, setPreview] = useState<{ file: File; url: string } | null>(
+    null,
+  );
   const qrRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!preview) return;
+    return () => URL.revokeObjectURL(preview.url);
+  }, [preview]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -100,37 +116,38 @@ export default function TicketPage() {
   const event = config?.hackathon_name || "HackUTD";
   const shareText = `Just got my ticket to ${event}. See you there!`;
 
-  const image = async () => {
-    if (!qrRef.current) throw new Error("QR code not ready");
-    const blob = await renderTicketPNG(lines, qrRef.current);
-    return new File([blob], "admission-ticket.png", { type: "image/png" });
-  };
-
-  const download = async () => {
+  const openPreview = async () => {
+    if (!qrRef.current) return;
     setBusy(true);
     try {
-      const file = await image();
-      const url = URL.createObjectURL(file);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.name;
-      a.click();
-      URL.revokeObjectURL(url);
+      const blob = await renderTicketPNG(lines, qrRef.current);
+      const file = new File([blob], "admission-ticket.png", {
+        type: "image/png",
+      });
+      setPreview({ file, url: URL.createObjectURL(file) });
     } catch {
-      toast.error("Couldn't save your ticket. Please try again.");
+      toast.error("Couldn't make your ticket image. Please try again.");
     } finally {
       setBusy(false);
     }
   };
 
+  const download = () => {
+    if (!preview) return;
+    const a = document.createElement("a");
+    a.href = preview.url;
+    a.download = preview.file.name;
+    a.click();
+  };
+
   // Phones get the native share sheet with the image attached; desktops,
-  // which mostly can't share files, get a prefilled post instead.
+  // which mostly can't share files, get a prefilled post instead. The image
+  // is already rendered, so the share sheet opens straight from the tap.
   const share = async () => {
-    setBusy(true);
+    if (!preview) return;
     try {
-      const file = await image();
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareText });
+      if (navigator.canShare?.({ files: [preview.file] })) {
+        await navigator.share({ files: [preview.file], text: shareText });
       } else {
         window.open(
           `https://x.com/intent/post?text=${encodeURIComponent(shareText)}`,
@@ -143,8 +160,6 @@ export default function TicketPage() {
       if (!(err instanceof DOMException && err.name === "AbortError")) {
         toast.error("Couldn't share your ticket. Please try again.");
       }
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -164,18 +179,48 @@ export default function TicketPage() {
       <TicketPrinter
         lines={lines}
         label={`Admission ticket for ${fullName(application) || user.email}`}
+        onTear={openPreview}
       />
 
-      <div className="mt-8 flex w-full flex-wrap justify-center gap-2 border-t border-white/10 pt-6">
-        <PrinterButton primary onClick={share} disabled={busy}>
-          <Share2 aria-hidden className="size-4" />
-          Post it
-        </PrinterButton>
-        <PrinterButton onClick={download} disabled={busy}>
-          <Download aria-hidden className="size-4" />
-          Download
+      <div className="mt-8 flex w-full justify-center border-t border-white/10 pt-6">
+        <PrinterButton primary onClick={openPreview} disabled={busy}>
+          <Eye aria-hidden className="size-4" />
+          Save or post
         </PrinterButton>
       </div>
+
+      <Dialog
+        open={!!preview}
+        onOpenChange={(open) => !open && setPreview(null)}
+      >
+        <DialogContent className="font-satoshi max-h-[92svh] gap-5 overflow-y-auto border-white/10 bg-[#0B0C15] p-5 text-white sm:max-w-md">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-[11px] font-normal tracking-[0.18em] text-[#dbc4ff] uppercase">
+              Your ticket
+            </DialogTitle>
+            <DialogDescription className="text-sm font-light text-white/55">
+              This is the image you&apos;ll save or post.
+            </DialogDescription>
+          </DialogHeader>
+          {preview && (
+            <img
+              src={preview.url}
+              alt="Your admission ticket"
+              className="aspect-[4/5] w-full rounded-lg border border-white/10"
+            />
+          )}
+          <div className="flex flex-wrap justify-center gap-2">
+            <PrinterButton primary onClick={share}>
+              <Share2 aria-hidden className="size-4" />
+              Post it
+            </PrinterButton>
+            <PrinterButton onClick={download}>
+              <Download aria-hidden className="size-4" />
+              Download
+            </PrinterButton>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Source for the exported image; the printer draws its own SVG. */}
       <QRCodeCanvas
