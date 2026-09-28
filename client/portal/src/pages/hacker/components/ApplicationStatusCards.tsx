@@ -209,7 +209,7 @@ export function ApplicationStatusCards({
         application.rsvp_status === "confirmed" && (
           <button
             type="button"
-            onClick={() => navigate("/app/rsvp")}
+            onClick={() => navigate("/app/ticket")}
             className="group mt-5 flex w-full items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#0B0C15]/80 p-5 text-left transition-colors hover:border-[#21FFF0]/30 hover:bg-[#10121D]"
           >
             <span className="block">
@@ -217,8 +217,8 @@ export function ApplicationStatusCards({
                 Spot claimed
               </span>
               <span className="mt-3 block text-sm font-light text-white/50">
-                Your RSVP is confirmed. We can&apos;t wait to see you at the
-                event!
+                Your RSVP is confirmed. Print your admission ticket and share
+                it!
               </span>
             </span>
             <ChevronRight

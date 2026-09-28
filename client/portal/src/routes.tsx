@@ -29,6 +29,7 @@ const ApplicationDetailPage = lazy(
   () => import("@/pages/hacker/application/ApplicationDetailPage"),
 );
 const HackerRSVPPage = lazy(() => import("@/pages/hacker/rsvp/RSVPPage"));
+const HackerTicketPage = lazy(() => import("@/pages/hacker/ticket/TicketPage"));
 const HackerTravelRSVPPage = lazy(
   () => import("@/pages/hacker/travel-rsvp/TravelRSVPPage"),
 );
@@ -151,6 +152,14 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<HackerPageLoader />}>
                 <HackerRSVPPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "ticket",
+            element: (
+              <Suspense fallback={<HackerPageLoader />}>
+                <HackerTicketPage />
               </Suspense>
             ),
           },
