@@ -63,12 +63,10 @@ function SponsorForm({
       ? `data:${sponsor.logo_content_type};base64,${sponsor.logo_data}`
       : "",
   );
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const acceptLogoFile = (file: File) => {
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
       toast.error("Unsupported file type. Use PNG, JPEG, WebP, or GIF.");
       return;
@@ -83,6 +81,31 @@ function SponsorForm({
     const reader = new FileReader();
     reader.onload = () => setLogoPreview(reader.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) acceptLogoFile(file);
+  };
+
+  const handleLogoDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setIsDraggingLogo(true);
+  };
+
+  const handleLogoDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // dragleave also fires when moving onto a child; only reset on real exit.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setIsDraggingLogo(false);
+  };
+
+  const handleLogoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingLogo(false);
+    const file = e.dataTransfer.files[0];
+    if (file) acceptLogoFile(file);
   };
 
   const clearLogo = () => {
@@ -115,7 +138,16 @@ function SponsorForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Logo</Label>
-        <div className="flex items-center gap-3">
+        <div
+          onDragOver={handleLogoDragOver}
+          onDragLeave={handleLogoDragLeave}
+          onDrop={handleLogoDrop}
+          className={`flex items-center gap-3 rounded-md border border-dashed p-2 transition-colors ${
+            isDraggingLogo
+              ? "border-primary bg-primary/5"
+              : "border-transparent"
+          }`}
+        >
           {logoPreview ? (
             <img
               src={logoPreview}
@@ -159,7 +191,7 @@ function SponsorForm({
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          PNG, JPEG, WebP, or GIF (max 1MB)
+          Drag and drop or choose a file. PNG, JPEG, WebP, or GIF (max 10MB)
         </p>
       </div>
       <div className="space-y-2">
