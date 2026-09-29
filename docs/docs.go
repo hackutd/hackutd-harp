@@ -4639,7 +4639,7 @@ const docTemplate = `{
         },
         "/public/sponsors": {
             "get": {
-                "description": "Returns all sponsors, ordered by display order. Logos are returned inline as base64 in logo_data, with the MIME type in logo_content_type — not as URLs.",
+                "description": "Returns all sponsors, ordered by display order. Each sponsor's logo is referenced by logo_url (an absolute, versioned URL to /public/sponsors/{sponsorID}/logo), or \"\" when the sponsor has no logo. Logo bytes are not inlined.",
                 "produces": [
                     "application/json"
                 ],
@@ -4660,7 +4660,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SponsorListResponse"
+                            "$ref": "#/definitions/main.PublicSponsorListResponse"
                         }
                     },
                     "401": {
@@ -4688,9 +4688,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/public/sponsors/{sponsorID}/logo": {
+            "get": {
+                "description": "Returns the sponsor's logo as raw image bytes with the stored content type. No API key is required so the URL can be used directly in an \u003cimg\u003e tag or by an image optimizer. Responses carry an ETag; when ?v matches the current version the response is immutable for a year, otherwise it is cacheable for five minutes.",
+                "produces": [
+                    "image/png",
+                    "image/jpeg",
+                    "image/webp",
+                    "image/gif"
+                ],
+                "tags": [
+                    "public"
+                ],
+                "summary": "Get sponsor logo (Public)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sponsor ID",
+                        "name": "sponsorID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Logo version (updated_at as unix seconds), as embedded in logo_url",
+                        "name": "v",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "304": {
+                        "description": "Not Modified"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/public/tracks": {
             "get": {
-                "description": "Returns all challenge tracks, ordered by display order. Logos are returned inline as base64 in logo_data, with the MIME type in logo_content_type — not as URLs.",
+                "description": "Returns all challenge tracks, ordered by display order. Each track's logo is referenced by logo_url (an absolute, versioned URL to /public/tracks/{trackID}/logo), or \"\" when the track has no logo. Logo bytes are not inlined.",
                 "produces": [
                     "application/json"
                 ],
@@ -4711,11 +4774,74 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.TrackListResponse"
+                            "$ref": "#/definitions/main.PublicTrackListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/public/tracks/{trackID}/logo": {
+            "get": {
+                "description": "Returns the track's logo as raw image bytes with the stored content type. No API key is required so the URL can be used directly in an \u003cimg\u003e tag or by an image optimizer. Responses carry an ETag; when ?v matches the current version the response is immutable for a year, otherwise it is cacheable for five minutes.",
+                "produces": [
+                    "image/png",
+                    "image/jpeg",
+                    "image/webp",
+                    "image/gif"
+                ],
+                "tags": [
+                    "public"
+                ],
+                "summary": "Get track logo (Public)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Track ID",
+                        "name": "trackID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Logo version (updated_at as unix seconds), as embedded in logo_url",
+                        "name": "v",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "304": {
+                        "description": "Not Modified"
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -11134,6 +11260,95 @@ const docTemplate = `{
                 },
                 "promoted_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "main.PublicSponsor": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display_order": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tier": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "website_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.PublicSponsorListResponse": {
+            "type": "object",
+            "properties": {
+                "sponsors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.PublicSponsor"
+                    }
+                }
+            }
+        },
+        "main.PublicTrack": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display_order": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "prizes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.TrackPrize"
+                    }
+                },
+                "sponsor_name": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.PublicTrackListResponse": {
+            "type": "object",
+            "properties": {
+                "tracks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.PublicTrack"
+                    }
                 }
             }
         },
