@@ -88,20 +88,20 @@ function SponsorForm({
     if (file) acceptLogoFile(file);
   };
 
-  const handleLogoDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleLogoDragOver = (e: React.DragEvent<HTMLButtonElement>) => {
     if (!e.dataTransfer.types.includes("Files")) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
     setIsDraggingLogo(true);
   };
 
-  const handleLogoDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleLogoDragLeave = (e: React.DragEvent<HTMLButtonElement>) => {
     // dragleave also fires when moving onto a child; only reset on real exit.
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
     setIsDraggingLogo(false);
   };
 
-  const handleLogoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleLogoDrop = (e: React.DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsDraggingLogo(false);
     const file = e.dataTransfer.files[0];
@@ -138,61 +138,64 @@ function SponsorForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Logo</Label>
-        <div
-          onDragOver={handleLogoDragOver}
-          onDragLeave={handleLogoDragLeave}
-          onDrop={handleLogoDrop}
-          className={`flex items-center gap-3 rounded-md border border-dashed p-2 transition-colors ${
-            isDraggingLogo
-              ? "border-primary bg-primary/5"
-              : "border-transparent"
-          }`}
-        >
-          {logoPreview ? (
-            <img
-              src={logoPreview}
-              alt="Logo preview"
-              className="size-12 rounded object-contain border"
-            />
-          ) : (
-            <div className="size-12 rounded border border-dashed flex items-center justify-center text-muted-foreground">
-              <ImagePlus className="size-5" />
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <input
-              ref={logoInputRef}
-              type="file"
-              accept={ALLOWED_LOGO_TYPES.join(",")}
-              className="hidden"
-              onChange={handleLogoChange}
-            />
+        <input
+          ref={logoInputRef}
+          type="file"
+          accept={ALLOWED_LOGO_TYPES.join(",")}
+          className="hidden"
+          onChange={handleLogoChange}
+        />
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => logoInputRef.current?.click()}
+            onDragOver={handleLogoDragOver}
+            onDragLeave={handleLogoDragLeave}
+            onDrop={handleLogoDrop}
+            className={`flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              isDraggingLogo
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50"
+            }`}
+          >
+            {logoPreview ? (
+              <>
+                <img
+                  src={logoPreview}
+                  alt="Logo preview"
+                  className="h-16 max-w-full object-contain"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Drop or click to replace
+                </span>
+              </>
+            ) : (
+              <>
+                <ImagePlus className="size-4 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {isDraggingLogo
+                    ? "Drop to upload"
+                    : "Drop logo here or click to browse"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  PNG, JPEG, WebP, or GIF · max 10MB
+                </span>
+              </>
+            )}
+          </button>
+          {logoFile && (
             <Button
               type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => logoInputRef.current?.click()}
-              className="cursor-pointer"
+              variant="ghost"
+              size="icon-sm"
+              onClick={clearLogo}
+              aria-label="Remove selected logo"
+              className="absolute right-1.5 top-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
             >
-              <ImagePlus className="mr-1 size-3" />
-              {logoPreview ? "Replace" : "Choose file"}
+              <X className="size-4" />
             </Button>
-            {logoFile && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                onClick={clearLogo}
-                className="cursor-pointer text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-4" />
-              </Button>
-            )}
-          </div>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Drag and drop or choose a file. PNG, JPEG, WebP, or GIF (max 10MB)
-        </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="sponsor-name">Name</Label>
