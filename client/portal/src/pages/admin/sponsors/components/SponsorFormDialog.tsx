@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { ALLOWED_LOGO_TYPES, MAX_LOGO_SOURCE_BYTES } from "../constants";
 import type { Sponsor, SponsorPayload } from "../types";
 
 const TIER_OPTIONS = [
@@ -31,8 +32,6 @@ const TIER_OPTIONS = [
   "Bronze",
   "Standard",
 ];
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-const MAX_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
 
 interface SponsorFormDialogProps {
   open: boolean;
@@ -70,13 +69,13 @@ function SponsorForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
       toast.error("Unsupported file type. Use PNG, JPEG, WebP, or GIF.");
       return;
     }
 
-    if (file.size > MAX_SIZE_BYTES) {
-      toast.error("File too large. Maximum size is 1MB.");
+    if (file.size > MAX_LOGO_SOURCE_BYTES) {
+      toast.error("File too large. Maximum size is 10MB.");
       return;
     }
 
@@ -132,7 +131,7 @@ function SponsorForm({
             <input
               ref={logoInputRef}
               type="file"
-              accept={ALLOWED_TYPES.join(",")}
+              accept={ALLOWED_LOGO_TYPES.join(",")}
               className="hidden"
               onChange={handleLogoChange}
             />

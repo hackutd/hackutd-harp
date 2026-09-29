@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-import { ALLOWED_LOGO_TYPES, MAX_LOGO_BYTES } from "../constants";
+import { ALLOWED_LOGO_TYPES, MAX_LOGO_SOURCE_BYTES } from "../constants";
 import type { Track, TrackPayload, TrackPrize } from "../types";
 
 interface TrackFormDialogProps {
@@ -62,8 +62,8 @@ function TrackForm({
       return;
     }
 
-    if (file.size > MAX_LOGO_BYTES) {
-      toast.error("File too large. Maximum size is 750KB.");
+    if (file.size > MAX_LOGO_SOURCE_BYTES) {
+      toast.error("File too large. Maximum size is 10MB.");
       return;
     }
 
