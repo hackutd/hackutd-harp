@@ -302,9 +302,10 @@ func (app *application) mount() http.Handler {
 					// Reviews
 					r.Route("/reviews", func(r chi.Router) {
 						r.Get("/pending", app.getPendingReviews)
-						r.Get("/next", app.getNextReview)
+						r.Post("/claim", app.claimReviews)
 						r.Put("/{reviewID}", app.submitVote)
 						r.Get("/completed", app.getCompletedReviews)
+						r.Get("/leaderboard", app.getReviewLeaderboard)
 					})
 
 					// Scans

@@ -1,6 +1,6 @@
 // Application Review feature types
 
-import type { TravelStatus } from "@/types";
+import type { TravelStatus, UserRole } from "@/types";
 
 export type ReviewVote = "accept" | "waitlist" | "reject";
 
@@ -54,6 +54,31 @@ export interface ReviewNote {
 }
 
 export interface ReviewsListResponse {
+  reviews: Review[];
+}
+
+/** One admin's row on the review leaderboard. Names are null for admins who never applied. */
+export interface ReviewerStats {
+  admin_id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture_url: string | null;
+  role: UserRole;
+  /** Admins with the same completed count share a rank. */
+  rank: number;
+  completed: number;
+  pending: number;
+  last_reviewed_at: string | null;
+}
+
+export interface ReviewLeaderboardResponse {
+  reviewers: ReviewerStats[];
+}
+
+/** POST /admin/reviews/claim: how many were claimed, plus the admin's new queue. */
+export interface ClaimReviewsResponse {
+  claimed: number;
   reviews: Review[];
 }
 

@@ -1036,6 +1036,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/reviews/claim": {
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Once the current admin has no pending reviews, assigns them up to 5 more and returns their new pending queue. Submitted applications below the reviews-per-application target are filled first; after that, unstarted reviews move over from reviewers who can no longer review and then from the longest queues, never leaving a holder with fewer pending reviews than the claimer. Every application keeps the same number of assigned reviews. Returns an empty list when nothing can be claimed. Super admins who have disabled their review assignment toggle are refused.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin/reviews"
+                ],
+                "summary": "Claim more reviews (Admin)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.ClaimReviewsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Review assignment disabled for this super admin",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Admin still has pending reviews",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/admin/reviews/completed": {
             "get": {
                 "security": [
@@ -1094,26 +1163,26 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/reviews/next": {
+        "/admin/reviews/leaderboard": {
             "get": {
                 "security": [
                     {
                         "CookieAuth": []
                     }
                 ],
-                "description": "Automatically assigns the next submitted application needing review to the current admin and returns it. Super admins who have disabled their review assignment toggle are refused.",
+                "description": "Returns every admin and super admin with their completed and pending review counts, most completed first. Admins with the same completed count share a rank.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "admin/reviews"
                 ],
-                "summary": "Get next review assignment (Admin)",
+                "summary": "Get review leaderboard (Admin)",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.ReviewResponse"
+                            "$ref": "#/definitions/main.ReviewLeaderboardResponse"
                         }
                     },
                     "401": {
@@ -1128,18 +1197,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Review assignment disabled for this super admin",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No applications need review",
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -10778,6 +10836,20 @@ const docTemplate = `{
                 }
             }
         },
+        "main.ClaimReviewsResponse": {
+            "type": "object",
+            "properties": {
+                "claimed": {
+                    "type": "integer"
+                },
+                "reviews": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.ApplicationReviewWithDetails"
+                    }
+                }
+            }
+        },
         "main.CompletedReviewsListResponse": {
             "type": "object",
             "properties": {
@@ -11499,6 +11571,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "main.ReviewLeaderboardResponse": {
+            "type": "object",
+            "properties": {
+                "reviewers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.ReviewerStats"
+                    }
                 }
             }
         },
@@ -13112,6 +13195,41 @@ const docTemplate = `{
                 "ReviewVoteReject",
                 "ReviewVoteWaitlist"
             ]
+        },
+        "store.ReviewerStats": {
+            "type": "object",
+            "properties": {
+                "admin_id": {
+                    "type": "string"
+                },
+                "completed": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "last_reviewed_at": {
+                    "type": "string"
+                },
+                "pending": {
+                    "type": "integer"
+                },
+                "profile_picture_url": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "role": {
+                    "$ref": "#/definitions/store.UserRole"
+                }
+            }
         },
         "store.Scan": {
             "type": "object",
