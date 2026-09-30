@@ -94,7 +94,13 @@ export const useSponsorsStore = create<SponsorsState>((set) => ({
   },
 
   uploadLogo: async (sponsorId: string, file: File) => {
-    const logo = await prepareLogoForUpload(file);
+    let logo;
+    try {
+      logo = await prepareLogoForUpload(file);
+    } catch {
+      toast.error("Couldn't read that image. Try a different file.");
+      return null;
+    }
     if (logo.byteLength > MAX_LOGO_BYTES) {
       toast.error("Logo is still too large after compression.");
       return null;
