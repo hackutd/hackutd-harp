@@ -30,8 +30,7 @@ const NOTCH_LG =
 const BUTTON =
   "h-14 w-full rounded-none text-[13px] font-medium tracking-[0.1em] uppercase focus-visible:ring-0 focus-visible:shadow-[inset_0_0_0_2px_#fff]";
 
-const LEGAL_LINK =
-  "text-[#8b93a1] underline underline-offset-2 transition-colors hover:text-white";
+const LEGAL_LINK = "login-sweep-link text-[#8b93a1]";
 
 // The night sky from zeroday.hackutd.co behind a single card. The art is
 // portrait and fades to black below the stars, so it is pinned to the top and
@@ -98,7 +97,7 @@ function ZeroDayShell({ children }: { children: ReactNode }) {
           href="https://github.com/hackutd/harp"
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-[12px] tracking-[0.12em] text-[#b4b9c4] uppercase transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          className="login-harp-link inline-flex items-center gap-1.5 text-[12px] tracking-[0.12em] text-[#b4b9c4] uppercase hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
         >
           Powered by HARP
           <ArrowUpRight aria-hidden className="size-3" />

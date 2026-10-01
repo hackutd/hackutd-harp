@@ -695,6 +695,59 @@
   transform: scaleX(1);
 }
 
+/* Sign-in page footer links: the same sweep-in underline and nudge as main's
+   cyan versions, recoloured to the page's grey-and-white palette. */
+.login-sweep-link {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+  transition: color 280ms ease;
+}
+
+.login-sweep-link::before,
+.login-sweep-link::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  content: "";
+}
+
+.login-sweep-link::before {
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.login-sweep-link::after {
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 280ms ease;
+}
+
+.login-sweep-link:hover,
+.login-sweep-link:focus-visible {
+  color: #fff;
+  outline: none;
+}
+
+.login-sweep-link:hover::after,
+.login-sweep-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.login-harp-link {
+  transition:
+    color 240ms ease,
+    transform 240ms ease;
+}
+
+.login-harp-link:hover,
+.login-harp-link:focus-visible {
+  transform: translateX(2px);
+}
+
 /* Zero Day hacker portal. The theme class lives at the shared hacker layout,
    so admin and public pages retain their existing palette. A matching body
    class covers Radix portals, which render outside the layout subtree. */
