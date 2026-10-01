@@ -186,20 +186,9 @@ export default function Login() {
     }
   };
 
+  // No pre-check against the typed email: it need not match the Google account
+  // the user picks. The backend rejects a mismatch using Google's own email.
   const handleGoogleLogin = async () => {
-    if (email) {
-      const checkRes = await checkEmailAuthMethod(email);
-      if (checkRes.status === 200 && checkRes.data?.exists) {
-        if (checkRes.data.auth_method === "passwordless") {
-          setState("error");
-          setError(
-            "This email is registered with magic link sign-in. Please use the email option instead.",
-          );
-          return;
-        }
-      }
-    }
-
     try {
       await redirectToThirdPartyLogin({ thirdPartyId: "google" });
     } catch (err) {
